@@ -1,14 +1,19 @@
 package com.example.soundtrackforlife;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 
+import android.Manifest;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.content.ContentResolver;
 import android.database.Cursor;
@@ -31,6 +36,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     private boolean musicBound=false;
     private MusicController controller;
     private boolean paused=false, playbackPaused=false;
+    final int MY_PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,6 +44,10 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         setContentView(R.layout.activity_main);
         songView = findViewById(R.id.song_list);
         songList = new ArrayList<>();
+
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, MY_PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE);
+        }
 
         getSongList();
 
