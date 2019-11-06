@@ -160,6 +160,10 @@ public class MusicService extends Service implements
         songPosn=songIndex;
     }
 
+    public Song getCurrentSongData() {
+        return songs.get(songPosn);
+    }
+
     public int getDur(){
         return player.getDuration();
     }

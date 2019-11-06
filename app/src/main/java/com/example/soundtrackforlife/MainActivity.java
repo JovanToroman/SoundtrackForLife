@@ -9,11 +9,15 @@ import java.util.Collections;
 import java.util.Comparator;
 
 import android.Manifest;
+import android.app.Activity;
 import android.content.ComponentName;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteOpenHelper;
 import android.net.Uri;
 import android.content.ContentResolver;
 import android.database.Cursor;
@@ -28,6 +32,9 @@ import android.widget.MediaController.MediaPlayerControl;
 import android.os.Bundle;
 
 public class MainActivity extends AppCompatActivity implements MediaPlayerControl {
+    
+    public static final int LIKE = 1;
+    public static final int DISLIKE = 0;
 
     private ArrayList<Song> songList;
     private ListView songView;
@@ -158,8 +165,27 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
                 musicSrv=null;
                 System.exit(0);
                 break;
+            case R.id.action_dislike:
+                addRecord(musicSrv.getCurrentSongData(), DISLIKE, null);
+                break;
+            case R.id.action_like:
+                addRecord(musicSrv.getCurrentSongData(), LIKE, null);
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    private void addRecord(Song song, int feedback, Activity activity) {
+        //TODO: persist to db
+        FeedbackDBreader dbHelper = new FeedbackDBreader(getApplicationContext());
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+
+        ContentValues values = new ContentValues();
+        values.put("songtitle", song.getTitle());
+        //TODO: check if this is proper activity info
+        values.put("activity", String.valueOf(activity.getTitle()));
+        values.put("value", feedback);
+
+        long newRowId = db.insert("feedback", null, values);
     }
 
     @Override
