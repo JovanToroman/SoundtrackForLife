@@ -350,4 +350,10 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
 
         return PendingIntent.getService(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
     }
+
+    private int getCurrentActivity() {
+        int defaultValue = -1;
+
+        return getSharedPreferences("prefs", Context.MODE_PRIVATE).getInt("activity", defaultValue);
+    }
 }

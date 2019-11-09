@@ -4,7 +4,9 @@ import android.app.Activity;
 import android.app.IntentService;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Looper;
+import android.preference.PreferenceManager;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -40,13 +42,10 @@ public class DetectedActivitiesIntentService extends IntentService {
     protected void onHandleIntent(Intent intent) {
         ActivityRecognitionResult result = ActivityRecognitionResult.extractResult(intent);
 
-        // Get the list of the probable activities associated with the current state of the
-        // device. Each activity is associated with a confidence level, which is an int between
-        // 0 and 100.
-
-        // used for testing
-        Log.i("detected activity: ", result.getMostProbableActivity().toString());
-        ShowInToast(result.getMostProbableActivity().toString());
+        getSharedPreferences("prefs", Context.MODE_PRIVATE).
+                edit().
+                putInt("activity", result.getMostProbableActivity().getType()).
+                apply();
     }
 
     // used for testing
