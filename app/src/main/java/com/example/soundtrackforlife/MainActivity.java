@@ -19,7 +19,6 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.database.sqlite.SQLiteDatabase;
-import android.database.sqlite.SQLiteOpenHelper;
 import android.net.Uri;
 import android.content.ContentResolver;
 import android.database.Cursor;
@@ -40,7 +39,6 @@ import android.widget.MediaController.MediaPlayerControl;
 
 
 import android.os.Bundle;
-import android.widget.Toast;
 
 public class MainActivity extends AppCompatActivity implements MediaPlayerControl {
     
@@ -57,6 +55,8 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     final int MY_PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE = 0;
     private ActivityRecognitionClient activityRecognitionClient;
     long DETECTION_INTERVAL_IN_MILLISECONDS = 5 * 1000;
+
+    private int activityType;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -189,23 +189,25 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
                 System.exit(0);
                 break;
             case R.id.action_dislike:
-                addRecord(musicSrv.getCurrentSongData(), DISLIKE, null);
+                addRecord(musicSrv.getCurrentSongData(), DISLIKE, 1);
                 break;
             case R.id.action_like:
-                addRecord(musicSrv.getCurrentSongData(), LIKE, null);
+                addRecord(musicSrv.getCurrentSongData(), LIKE, 2);
+
         }
         return super.onOptionsItemSelected(item);
     }
 
-    private void addRecord(Song song, int feedback, Activity activity) {
+    private void addRecord(Song song, int feedback, int activityType) {
         //TODO: persist to db
+
         FeedbackDBreader dbHelper = new FeedbackDBreader(getApplicationContext());
         SQLiteDatabase db = dbHelper.getWritableDatabase();
 
         ContentValues values = new ContentValues();
         values.put("songtitle", song.getTitle());
         //TODO: check if this is proper activity info
-        values.put("activity", String.valueOf(activity.getTitle()));
+        values.put("activity", String.valueOf(activityType));
         values.put("value", feedback);
 
         long newRowId = db.insert("feedback", null, values);
