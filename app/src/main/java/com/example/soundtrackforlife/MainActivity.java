@@ -189,18 +189,16 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
                 System.exit(0);
                 break;
             case R.id.action_dislike:
-                addRecord(musicSrv.getCurrentSongData(), DISLIKE, 1);
+                addRecord(musicSrv.getCurrentSongData(), DISLIKE, getCurrentActivity());
                 break;
             case R.id.action_like:
-                addRecord(musicSrv.getCurrentSongData(), LIKE, 2);
+                addRecord(musicSrv.getCurrentSongData(), LIKE, getCurrentActivity());
 
         }
         return super.onOptionsItemSelected(item);
     }
 
     private void addRecord(Song song, int feedback, int activityType) {
-        //TODO: persist to db
-
         FeedbackDBreader dbHelper = new FeedbackDBreader(getApplicationContext());
         SQLiteDatabase db = dbHelper.getWritableDatabase();
 
