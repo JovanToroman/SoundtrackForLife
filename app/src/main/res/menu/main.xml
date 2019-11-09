@@ -15,4 +15,18 @@
         android:title="End"
         app:showAsAction="always" />
 
+    <item
+        android:id="@+id/action_like"
+        android:icon="@drawable/like"
+        android:orderInCategory="2"
+        android:title="End"
+        app:showAsAction="always" />
+
+    <item
+        android:id="@+id/action_dislike"
+        android:icon="@drawable/dislike"
+        android:orderInCategory="2"
+        android:title="End"
+        app:showAsAction="always" />
+
 </menu>
