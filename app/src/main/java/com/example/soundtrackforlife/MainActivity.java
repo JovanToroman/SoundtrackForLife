@@ -1,5 +1,6 @@
 package com.example.soundtrackforlife;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -10,6 +11,7 @@ import java.util.Comparator;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.PendingIntent;
 import android.content.ComponentName;
 import android.content.ContentValues;
 import android.content.Context;
@@ -24,14 +26,21 @@ import android.database.Cursor;
 import android.os.IBinder;
 import android.view.Menu;
 import android.view.MenuInflater;
+import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ListView;
 import com.example.soundtrackforlife.MusicService.MusicBinder;
+import com.google.android.gms.location.ActivityRecognitionClient;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.Task;
+
 import android.widget.MediaController.MediaPlayerControl;
 
 
 import android.os.Bundle;
+import android.widget.Toast;
 
 public class MainActivity extends AppCompatActivity implements MediaPlayerControl {
     
@@ -46,6 +55,8 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     private MusicController controller;
     private boolean paused=false, playbackPaused=false;
     final int MY_PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE = 0;
+    private ActivityRecognitionClient activityRecognitionClient;
+    long DETECTION_INTERVAL_IN_MILLISECONDS = 5 * 1000;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -69,6 +80,9 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         SongAdapter songAdt = new SongAdapter(this, songList);
         songView.setAdapter(songAdt);
         setController();
+
+        activityRecognitionClient = new ActivityRecognitionClient(this);
+        startActivityRecognition();
     }
 
     @Override
@@ -307,5 +321,31 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
             playbackPaused=false;
         }
         controller.show(0);
+    }
+
+    void startActivityRecognition() {
+        Task<Void> task = activityRecognitionClient.requestActivityUpdates(
+                DETECTION_INTERVAL_IN_MILLISECONDS,
+                getActivityDetectionPendingIntent());
+
+        task.addOnSuccessListener(new OnSuccessListener<Void>() {
+            @Override
+            public void onSuccess(Void result) {
+                Log.i("startActivityRecognition", "starting activity recognition");
+            }
+        });
+
+        task.addOnFailureListener(new OnFailureListener() {
+            @Override
+            public void onFailure(@NonNull Exception e) {
+                Log.w("startActivityRecognition", e);
+            }
+        });
+    }
+
+    private PendingIntent getActivityDetectionPendingIntent() {
+        Intent intent = new Intent(this, DetectedActivitiesIntentService.class);
+
+        return PendingIntent.getService(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
     }
 }
