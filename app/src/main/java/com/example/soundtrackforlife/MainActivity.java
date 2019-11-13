@@ -10,7 +10,6 @@ import java.util.Collections;
 import java.util.Comparator;
 
 import android.Manifest;
-import android.app.Activity;
 import android.app.PendingIntent;
 import android.content.ComponentName;
 import android.content.ContentValues;
@@ -56,7 +55,6 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     private ActivityRecognitionClient activityRecognitionClient;
     long DETECTION_INTERVAL_IN_MILLISECONDS = 5 * 1000;
 
-    private int activityType;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -257,8 +255,9 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
 
     @Override
     public boolean isPlaying() {
-        if(musicSrv!=null && musicBound)
-        return musicSrv.isPng();
+        if(musicSrv!=null && musicBound){
+            return musicSrv.isPng();
+        }
         return false;
     }
 
@@ -301,8 +300,9 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
             }
         });
         controller.setMediaPlayer(this);
-        controller.setAnchorView(findViewById(R.id.song_list));
+        controller.setAnchorView(findViewById(R.id.song_view));
         controller.setEnabled(true);
+        controller.setActivated(true);
     }
 
     private void playNext(){
@@ -331,14 +331,14 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         task.addOnSuccessListener(new OnSuccessListener<Void>() {
             @Override
             public void onSuccess(Void result) {
-                Log.i("startActivityRecognition", "starting activity recognition");
+                Log.i("startActRecognition", "starting activity recognition");
             }
         });
 
         task.addOnFailureListener(new OnFailureListener() {
             @Override
             public void onFailure(@NonNull Exception e) {
-                Log.w("startActivityRecognition", e);
+                Log.w("startActRecognition", e);
             }
         });
     }

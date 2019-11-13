@@ -29,10 +29,6 @@ public class MusicService extends Service implements
     private String songTitle="";
     private static final int NOTIFY_ID=1;
 
-    public int getPosn() {
-        return songPosn;
-    }
-
     //current position
     private int songPosn;
     private final IBinder musicBind = new MusicBinder();
@@ -156,6 +152,10 @@ public class MusicService extends Service implements
         else shuffle=true;
     }
 
+    public int getPosn() {
+        return player.getCurrentPosition();
+    }
+
     public void setSong(int songIndex){
         songPosn=songIndex;
     }
@@ -186,7 +186,9 @@ public class MusicService extends Service implements
 
     public void playPrev(){
         songPosn--;
-        if(songPosn < 0) songPosn=songs.size()-1;
+        if(songPosn < 0){
+            songPosn=songs.size()-1;
+        }
         playSong();
     }
 
