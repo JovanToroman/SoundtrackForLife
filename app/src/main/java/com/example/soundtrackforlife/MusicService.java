@@ -122,10 +122,10 @@ public class MusicService extends Service implements
 
     @Override
     public void onCompletion(MediaPlayer mp) {
-        if(player.getCurrentPosition()>0){
+        //if(player.getCurrentPosition()>0){ TODO: check if this will crash the app. Removed to allow transition from one song to other and display progress bar properly
             mp.reset();
             playNext();
-        }
+        //}
     }
 
     @Override
@@ -147,9 +147,14 @@ public class MusicService extends Service implements
         }
     }
 
-    public void setShuffle(){
-        if(shuffle) shuffle=false;
-        else shuffle=true;
+    public boolean setShuffle(){
+        if(shuffle) {
+            shuffle=false;
+        }
+        else {
+            shuffle=true;
+        }
+        return shuffle;
     }
 
     public int getPosn() {

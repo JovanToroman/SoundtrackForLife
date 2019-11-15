@@ -33,9 +33,9 @@ import com.google.android.gms.location.ActivityRecognitionClient;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
+import com.google.android.material.snackbar.Snackbar;
 
 import android.widget.MediaController.MediaPlayerControl;
-
 
 import android.os.Bundle;
 
@@ -66,7 +66,6 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, MY_PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE);
         }
-
         getSongList();
 
         Collections.sort(songList, new Comparator<Song>(){
@@ -179,21 +178,29 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.action_shuffle:
-                musicSrv.setShuffle();
+                boolean shuffle = musicSrv.setShuffle();
+                displayMessage("Shuffle " + (shuffle ? "On" : "Off"));
                 break;
             case R.id.action_end:
                 stopService(playIntent);
                 musicSrv=null;
                 System.exit(0);
                 break;
+                // TODO: handle implicit feedback
             case R.id.action_dislike:
                 addRecord(musicSrv.getCurrentSongData(), DISLIKE, getCurrentActivity());
+                displayMessage("You didn't like " + musicSrv.getCurrentSongData().getTitle());
                 break;
             case R.id.action_like:
                 addRecord(musicSrv.getCurrentSongData(), LIKE, getCurrentActivity());
-
+                displayMessage("You liked " + musicSrv.getCurrentSongData().getTitle());
+                break;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    public void displayMessage(String mess) {
+        Snackbar.make(findViewById(R.id.coordinatorLayout), mess, Snackbar.LENGTH_SHORT).show();
     }
 
     private void addRecord(Song song, int feedback, int activityType) {
