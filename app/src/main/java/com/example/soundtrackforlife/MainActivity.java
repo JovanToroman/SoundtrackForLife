@@ -8,6 +8,8 @@ import androidx.core.content.ContextCompat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
+import java.util.Set;
 
 import android.Manifest;
 import android.app.PendingIntent;
@@ -22,6 +24,8 @@ import android.net.Uri;
 import android.content.ContentResolver;
 import android.database.Cursor;
 import android.os.IBinder;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.util.Log;
@@ -34,6 +38,7 @@ import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.material.snackbar.Snackbar;
+import com.google.android.material.textfield.TextInputEditText;
 
 import android.widget.MediaController.MediaPlayerControl;
 
@@ -54,6 +59,12 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     final int MY_PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE = 0;
     private ActivityRecognitionClient activityRecognitionClient;
     long DETECTION_INTERVAL_IN_MILLISECONDS = 5 * 1000;
+    private ArrayList<Song> songPlaylist;
+    private ListView songPlaylistView;
+    private ArrayList<Song> songSearchList;
+    private ListView songSearchListView;
+    private TextInputEditText searchInput;
+    private SongAdapter songSearchAdapter;
 
 
     @Override
@@ -158,13 +169,26 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     }
 
     public void songPicked(View view){
-        musicSrv.setSong(Integer.parseInt(view.getTag().toString()));
-        musicSrv.playSong();
-        if(playbackPaused){
-            setController();
-            playbackPaused=false;
+
+        if (view.getParent() == findViewById(R.id.song_search)) {
+            // TODO: do not edit recieved set, make copy
+            Set<String> set = getSharedPreferences("prefs", Context.MODE_PRIVATE).
+                    getStringSet("playlist_name", new HashSet<String>()).
+                    add(view.getChildAt(0).getText() + " " + view.getChildAt(1).getText());
+            getSharedPreferences("prefs", Context.MODE_PRIVATE).
+                    edit().
+                    putStringSet("playlist_name", set).
+                    apply();
         }
-        controller.show(0);
+        else {
+            musicSrv.setSong(Integer.parseInt(view.getTag().toString()));
+            musicSrv.playSong();
+            if (playbackPaused) {
+                setController();
+                playbackPaused = false;
+            }
+            controller.show(0);
+        }
     }
 
     @Override
@@ -360,5 +384,113 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         int defaultValue = -1;
 
         return getSharedPreferences("prefs", Context.MODE_PRIVATE).getInt("activity", defaultValue);
+    }
+
+    public void goToPlaylistMaker(View view) {
+        setContentView(R.layout.playlist_maker);
+    }
+
+    // TODO: generate list based on selected playlist
+    public void goToPlaylist(View view) {
+        switch (view.getId()) {
+            case R.id.in_vehicle:
+                break;
+            case R.id.on_bicycle:
+                break;
+            case R.id.walking:
+                break;
+            case R.id.running:
+                break;
+            case R.id.still:
+                break;
+        }
+        setContentView(R.layout.playlist);
+        songPlaylistView = findViewById(R.id.song_playlist);
+        songPlaylist = new ArrayList<>();
+
+        /*getSongList();
+
+        Collections.sort(songList, new Comparator<Song>(){
+            public int compare(Song a, Song b){
+                return a.getTitle().compareTo(b.getTitle());
+            }
+        });*/
+
+        SongAdapter songAdt = new SongAdapter(this, songPlaylist);
+        songPlaylistView.setAdapter(songAdt);
+    }
+
+    public void goToSongFinder(View view) {
+        setContentView(R.layout.song_finder);
+        songSearchListView = findViewById(R.id.song_search);
+        songSearchList = getRefreshedSearchList("");
+        songSearchAdapter = new SongAdapter(this, songSearchList);
+        songSearchListView.setAdapter(songSearchAdapter);
+
+        searchInput = findViewById(R.id.search_input);
+        searchInput.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {}
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                songSearchList = getRefreshedSearchList(s.toString());
+                songSearchAdapter.setSongs(songSearchList);
+                findViewById(R.id.song_search).invalidate();
+            }
+        });
+    }
+
+    public ArrayList getRefreshedSearchList(String searchStr) {
+        ArrayList<Song> arrayList = new ArrayList<>();
+
+        //retrieve song info
+        ContentResolver musicResolver = getContentResolver();
+        Uri musicUri = android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
+        Cursor musicCursor = musicResolver.query(musicUri, null, null, null, null);
+
+        if(musicCursor!=null && musicCursor.moveToFirst()){
+            //get columns
+            int titleColumn = musicCursor.getColumnIndex
+                    (android.provider.MediaStore.Audio.Media.TITLE);
+            int idColumn = musicCursor.getColumnIndex
+                    (android.provider.MediaStore.Audio.Media._ID);
+            int artistColumn = musicCursor.getColumnIndex
+                    (android.provider.MediaStore.Audio.Media.ARTIST);
+            //add songs to list
+            do {
+                long thisId = musicCursor.getLong(idColumn);
+                String thisTitle = musicCursor.getString(titleColumn);
+                String thisArtist = musicCursor.getString(artistColumn);
+
+                if (searchStr.length() == 0) {
+                    arrayList.add(new Song(thisId, thisTitle, thisArtist));
+                    continue;
+                }
+
+                if (searchStr.length() > 2) {
+                    if (thisTitle.toLowerCase().contains(searchStr.toLowerCase())) {
+                        arrayList.add(new Song(thisId, thisTitle, thisArtist));
+                        continue;
+                    }
+                }
+
+                if (thisTitle.toLowerCase().startsWith(searchStr.toLowerCase())) {
+                    arrayList.add(new Song(thisId, thisTitle, thisArtist));
+                }
+            }
+            while (musicCursor.moveToNext());
+        }
+
+        Collections.sort(arrayList, new Comparator<Song>(){
+            public int compare(Song a, Song b){
+                return a.getTitle().compareTo(b.getTitle());
+            }
+        });
+
+        return arrayList;
     }
 }

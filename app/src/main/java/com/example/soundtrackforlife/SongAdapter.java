@@ -55,4 +55,8 @@ public class SongAdapter extends BaseAdapter {
         return songLay;
     }
 
+    public void setSongs(ArrayList<Song> theSongs){
+        songs=theSongs;
+    }
+
 }
