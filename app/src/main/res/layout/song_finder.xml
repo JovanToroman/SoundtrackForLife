@@ -14,6 +14,22 @@
             android:hint="Search song title..." />
     </com.google.android.material.textfield.TextInputLayout>
 
+    <TextView
+        android:id="@+id/no_songs_found_text"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="No matching songs found"
+        android:textAlignment="center"
+        android:visibility="gone" />
+
+    <Button
+        android:id="@+id/add_search_song"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:onClick="saveSongAsString"
+        android:text="add song"
+        android:visibility="gone" />
+
     <ListView
         android:id="@+id/song_search"
         android:layout_width="fill_parent"

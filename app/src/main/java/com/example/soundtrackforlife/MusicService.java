@@ -212,4 +212,22 @@ public class MusicService extends Service implements
         }
         playSong();
     }
+
+    public int getSongPosn(String title, String artist) {
+        for (Song song : songs) {
+            if (song.getTitle().equals(title) && song.getArtist().equals(artist)) {
+                return songs.indexOf(song);
+            }
+        }
+        return 0;
+    }
+
+    public long getSongID(String title, String artist) {
+        for (Song song : songs) {
+            if (song.getTitle().equals(title) && song.getArtist().equals(artist)) {
+                return song.getID();
+            }
+        }
+        return 0;
+    }
 }
