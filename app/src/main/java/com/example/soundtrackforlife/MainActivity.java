@@ -24,6 +24,7 @@ import android.net.Uri;
 import android.content.ContentResolver;
 import android.database.Cursor;
 import android.os.IBinder;
+import android.provider.MediaStore;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.Menu;
@@ -62,6 +63,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     final int MY_PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE = 0;
     private ActivityRecognitionClient activityRecognitionClient;
     long DETECTION_INTERVAL_IN_MILLISECONDS = 5 * 1000;
+    private FeatureExtractor fex;
     private ArrayList<Song> songPlaylist;
     private ListView songPlaylistView;
     private ArrayList<Song> songSearchList;
@@ -78,9 +80,13 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         setContentView(R.layout.activity_main);
         songView = findViewById(R.id.song_list);
         songList = new ArrayList<>();
+        fex = new FeatureExtractor(this.getAssets(), this);
 
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, MY_PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE);
+        }
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
         }
         getSongList();
 
@@ -156,18 +162,17 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
 
         if(musicCursor!=null && musicCursor.moveToFirst()){
             //get columns
-            int titleColumn = musicCursor.getColumnIndex
-                    (android.provider.MediaStore.Audio.Media.TITLE);
-            int idColumn = musicCursor.getColumnIndex
-                    (android.provider.MediaStore.Audio.Media._ID);
-            int artistColumn = musicCursor.getColumnIndex
-                    (android.provider.MediaStore.Audio.Media.ARTIST);
+            int titleColumn = musicCursor.getColumnIndex(MediaStore.Audio.Media.TITLE);
+            int relativePath = musicCursor.getColumnIndex(MediaStore.Audio.Media.DATA);
+            int idColumn = musicCursor.getColumnIndex(MediaStore.Audio.Media._ID);
+            int artistColumn = musicCursor.getColumnIndex(MediaStore.Audio.Media.ARTIST);
             //add songs to list
             do {
                 long thisId = musicCursor.getLong(idColumn);
                 String thisTitle = musicCursor.getString(titleColumn);
                 String thisArtist = musicCursor.getString(artistColumn);
-                songList.add(new Song(thisId, thisTitle, thisArtist));
+                String thisRelativePath = musicCursor.getString(relativePath);
+                songList.add(new Song(thisId, thisTitle, thisArtist, thisRelativePath));
             }
             while (musicCursor.moveToNext());
         }
@@ -233,7 +238,9 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
                 displayMessage("You didn't like " + musicSrv.getCurrentSongData().getTitle());
                 break;
             case R.id.action_like:
-                addRecord(musicSrv.getCurrentSongData(), LIKE, getCurrentActivity());
+                // TODO: how to get features asynchronously and write them in the db once processing is done
+//                addRecord(musicSrv.getCurrentSongData(), LIKE, getCurrentActivity());
+                double[][] features = fex.extractFeatures(musicSrv.getCurrentSongData());
                 displayMessage("You liked " + musicSrv.getCurrentSongData().getTitle());
                 break;
         }
@@ -245,6 +252,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     }
 
     private void addRecord(Song song, int feedback, int activityType) {
+        // TODO: add location to saved data and time
         FeedbackDBreader dbHelper = new FeedbackDBreader(getApplicationContext());
         SQLiteDatabase db = dbHelper.getWritableDatabase();
 
