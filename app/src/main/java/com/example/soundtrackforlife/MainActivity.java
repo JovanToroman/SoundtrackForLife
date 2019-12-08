@@ -23,6 +23,7 @@ import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.content.ContentResolver;
 import android.database.Cursor;
+import android.os.AsyncTask;
 import android.os.IBinder;
 import android.provider.MediaStore;
 import android.text.Editable;
@@ -234,24 +235,23 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
                 break;
                 // TODO: handle implicit feedback
             case R.id.action_dislike:
-                addRecord(musicSrv.getCurrentSongData(), DISLIKE, getCurrentActivity());
+                AsyncTask.execute(() -> addRecordWithFeatures(musicSrv.getCurrentSongData(), DISLIKE));
                 displayMessage("You didn't like " + musicSrv.getCurrentSongData().getTitle());
                 break;
             case R.id.action_like:
-                // TODO: how to get features asynchronously and write them in the db once processing is done
-//                addRecord(musicSrv.getCurrentSongData(), LIKE, getCurrentActivity());
-                double[][] features = fex.extractFeatures(musicSrv.getCurrentSongData());
+                AsyncTask.execute(() -> addRecordWithFeatures(musicSrv.getCurrentSongData(), LIKE));
                 displayMessage("You liked " + musicSrv.getCurrentSongData().getTitle());
                 break;
         }
         return super.onOptionsItemSelected(item);
     }
 
-    public void displayMessage(String mess) {
-        Snackbar.make(findViewById(R.id.coordinatorLayout), mess, Snackbar.LENGTH_SHORT).show();
+    private void addRecordWithFeatures(Song song, int feedback) {
+        double[][] features = fex.extractFeatures(song);
+        addRecord(song, feedback, getCurrentActivity(), features);
     }
 
-    private void addRecord(Song song, int feedback, int activityType) {
+    private void addRecord(Song song, int feedback, int activityType, double[][] features) {
         // TODO: add location to saved data and time
         FeedbackDBreader dbHelper = new FeedbackDBreader(getApplicationContext());
         SQLiteDatabase db = dbHelper.getWritableDatabase();
@@ -262,7 +262,17 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         values.put("activity", String.valueOf(activityType));
         values.put("value", feedback);
 
+        if(features != null && features[0] != null && features[0].length > 0) {
+            for(int i = 0; i < 8; i++) {
+                values.put("feature" + (i + 1), features[i][0]);
+            }
+        }
+
         long newRowId = db.insert("feedback", null, values);
+    }
+
+    public void displayMessage(String mess) {
+        Snackbar.make(findViewById(R.id.coordinatorLayout), mess, Snackbar.LENGTH_SHORT).show();
     }
 
     @Override

@@ -116,8 +116,12 @@ public class MusicService extends Service implements
         catch(Exception e){
             Log.e("MUSIC SERVICE", "Error setting data source", e);
         }
-
-        player.prepareAsync();
+        try {
+            player.prepareAsync();
+        }
+        catch (Exception e) {
+            Log.e("MUSIC SERVICE", "prepareAsync() crashed");
+        }
     }
 
     @Override

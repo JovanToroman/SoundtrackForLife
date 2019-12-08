@@ -1,6 +1,7 @@
 package com.example.soundtrackforlife;
 
 import android.content.Context;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
@@ -18,7 +19,15 @@ public class FeedbackDBreader extends SQLiteOpenHelper {
         db.execSQL("create table IF NOT EXISTS "+ TABLE_NAME + " (_id integer primary key autoincrement, "
                 + "value short not null,"
                 + "songtitle text not null,"
-                + "activity short not null"
+                + "activity short not null,"
+                + "feature1 float,"
+                + "feature2 float,"
+                + "feature3 float,"
+                + "feature4 float,"
+                + "feature5 float,"
+                + "feature6 float,"
+                + "feature7 float,"
+                + "feature8 float"
                 +");");
     }
 
