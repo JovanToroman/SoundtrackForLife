@@ -6,9 +6,11 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import android.Manifest;
@@ -25,6 +27,7 @@ import android.content.ContentResolver;
 import android.database.Cursor;
 import android.os.AsyncTask;
 import android.os.IBinder;
+import android.os.Looper;
 import android.provider.MediaStore;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -38,11 +41,19 @@ import android.widget.LinearLayout;
 import android.widget.ListView;
 import com.example.soundtrackforlife.MusicService.MusicBinder;
 import com.google.android.gms.location.ActivityRecognitionClient;
+import com.google.android.gms.location.DetectedActivity;
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationCallback;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationResult;
+import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.textfield.TextInputEditText;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
 
 import android.widget.MediaController.MediaPlayerControl;
 
@@ -62,8 +73,9 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     private MusicController controller;
     private boolean paused=false, playbackPaused=false;
     final int MY_PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE = 0;
+    final int MY_REQUEST_PERMISSIONS_REQUEST_CODE = 2;
     private ActivityRecognitionClient activityRecognitionClient;
-    long DETECTION_INTERVAL_IN_MILLISECONDS = 5 * 1000;
+    long DETECTION_INTERVAL_IN_MILLISECONDS = 30 * 1000;
     private FeatureExtractor fex;
     private ArrayList<Song> songPlaylist;
     private ListView songPlaylistView;
@@ -73,7 +85,12 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     private SongAdapter songSearchAdapter;
     String selected_playlist;
     String activityStr;
-
+    FirebaseDatabase firebaseDatabase;
+    DatabaseReference databaseReference;
+    private FusedLocationProviderClient fusedLocationClient;
+    private LocationCallback locationCallback;
+    private LocationRequest locationRequest;
+    long UPDATE_INTERVAL_IN_MILLISECONDS = 360 * 1000;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -89,6 +106,10 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
         }
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, MY_REQUEST_PERMISSIONS_REQUEST_CODE);
+        }
+
         getSongList();
 
         Collections.sort(songList, new Comparator<Song>(){
@@ -103,6 +124,26 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
 
         activityRecognitionClient = new ActivityRecognitionClient(this);
         startActivityRecognition();
+
+        firebaseDatabase = FirebaseDatabase.getInstance();
+        databaseReference = firebaseDatabase.getReference("songs");
+
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
+        locationCallback = new LocationCallback() {
+            @Override
+            public void onLocationResult(LocationResult locationResult) {
+                super.onLocationResult(locationResult);
+                getSharedPreferences("prefs", Context.MODE_PRIVATE).
+                        edit().
+                        putString("locationLat", Double.toString(locationResult.getLastLocation().getLatitude())).
+                        putString("locationLon", Double.toString(locationResult.getLastLocation().getLongitude())).
+                        apply();
+            }
+        };
+        locationRequest = new LocationRequest();
+        locationRequest.setInterval(UPDATE_INTERVAL_IN_MILLISECONDS);
+        locationRequest.setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY);
+        fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper());
     }
 
     @Override
@@ -193,6 +234,10 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
                         putStringSet(selected_playlist, set).
                         apply();
             }
+            AsyncTask.execute(() -> addRecordToFireBasePlaylist(
+                    ((TextView)((LinearLayout) view).getChildAt(0)).getText().toString(),
+                    ((TextView)((LinearLayout) view).getChildAt(1)).getText().toString(),
+                    selected_playlist));
             setupPlaylistView();
         }
         else {
@@ -269,6 +314,8 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         }
 
         long newRowId = db.insert("feedback", null, values);
+
+        addRecordToFirebase(song, feedback, activityType, features);
     }
 
     public void displayMessage(String mess) {
@@ -466,7 +513,8 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
             songPlaylist.add(new Song(
                     musicSrv.getSongID(song.substring(0, song.indexOf('|')), song.substring(song.indexOf('|') + 1)),
                     song.substring(0, song.indexOf('|')),
-                    song.substring(song.indexOf('|') + 1)));
+                    song.substring(song.indexOf('|') + 1),
+                    musicSrv.getSongPath(song.substring(0, song.indexOf('|')), song.substring(song.indexOf('|') + 1))));
         }
 
         Collections.sort(songPlaylist, new Comparator<Song>(){
@@ -524,12 +572,10 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
 
         if(musicCursor!=null && musicCursor.moveToFirst()){
             //get columns
-            int titleColumn = musicCursor.getColumnIndex
-                    (android.provider.MediaStore.Audio.Media.TITLE);
-            int idColumn = musicCursor.getColumnIndex
-                    (android.provider.MediaStore.Audio.Media._ID);
-            int artistColumn = musicCursor.getColumnIndex
-                    (android.provider.MediaStore.Audio.Media.ARTIST);
+            int titleColumn = musicCursor.getColumnIndex(MediaStore.Audio.Media.TITLE);
+            int relativePath = musicCursor.getColumnIndex(MediaStore.Audio.Media.DATA);
+            int idColumn = musicCursor.getColumnIndex(MediaStore.Audio.Media._ID);
+            int artistColumn = musicCursor.getColumnIndex(MediaStore.Audio.Media.ARTIST);
 
             Set<String> set = new HashSet<String> (getSharedPreferences("prefs", Context.MODE_PRIVATE).
                     getStringSet(selected_playlist, new HashSet<String>()));
@@ -539,22 +585,23 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
                 long thisId = musicCursor.getLong(idColumn);
                 String thisTitle = musicCursor.getString(titleColumn);
                 String thisArtist = musicCursor.getString(artistColumn);
+                String thisRelativePath = musicCursor.getString(relativePath);
 
                 if (!set.contains(thisTitle + "|" + thisArtist)) {
                     if (searchStr.length() == 0) {
-                        arrayList.add(new Song(thisId, thisTitle, thisArtist));
+                        arrayList.add(new Song(thisId, thisTitle, thisArtist, thisRelativePath));
                         continue;
                     }
 
                     if (searchStr.length() > 2) {
                         if (thisTitle.toLowerCase().contains(searchStr.toLowerCase())) {
-                            arrayList.add(new Song(thisId, thisTitle, thisArtist));
+                            arrayList.add(new Song(thisId, thisTitle, thisArtist, thisRelativePath));
                             continue;
                         }
                     }
 
                     if (thisTitle.toLowerCase().startsWith(searchStr.toLowerCase())) {
-                        arrayList.add(new Song(thisId, thisTitle, thisArtist));
+                        arrayList.add(new Song(thisId, thisTitle, thisArtist, thisRelativePath));
                     }
                 }
             }
@@ -581,6 +628,125 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
                     putStringSet(selected_playlist + "_manual", set).
                     apply();
         }
+        addRecordToFirebaseManual(songStr);
         setupPlaylistView();
+    }
+
+    String getHour() {
+        return Integer.toString(Calendar.getInstance().get(Calendar.HOUR_OF_DAY));
+    }
+
+    String getDay() {
+        return Calendar.getInstance().getTime().toString().substring(0,3);
+    }
+
+    String getCurrentLocationLatitude() {
+        return getSharedPreferences("prefs", Context.MODE_PRIVATE).getString("locationLat", "0.0");
+    }
+
+    String getCurrentLocationLongitude() {
+        return getSharedPreferences("prefs", Context.MODE_PRIVATE).getString("locationLon", "0.0");
+    }
+
+    String getActivityString(int activity) {
+
+        String activityStr = "";
+
+        switch (activity) {
+            case DetectedActivity.IN_VEHICLE:
+                activityStr = "IN_VEHICLE";
+                break;
+            case DetectedActivity.ON_BICYCLE:
+                activityStr = "ON_BICYCLE";
+                break;
+            case DetectedActivity.ON_FOOT:
+                activityStr = "ON_FOOT";
+                break;
+            case DetectedActivity.STILL:
+                activityStr = "STILL";
+                break;
+            case DetectedActivity.UNKNOWN:
+                activityStr = "UNKNOWN";
+                break;
+            case DetectedActivity.TILTING:
+                activityStr = "TILTING";
+                break;
+            case DetectedActivity.WALKING:
+                activityStr = "WALKING";
+                break;
+            case DetectedActivity.RUNNING:
+                activityStr = "RUNNING";
+                break;
+        }
+
+        return activityStr;
+    }
+
+    void addRecordToFirebaseManual(String title) {
+        DatabaseReference databaseReferenceManual = databaseReference.child("manual");
+        databaseReferenceManual.push().setValue(title);
+    }
+
+    void addRecordToFireBasePlaylist(String title, String artist, String playlist) {
+        DatabaseReference databaseReferencePlaylist = databaseReference.child("playlist");
+
+        Song song = musicSrv.getSong(title, artist);
+        if (song.getID() == -1) {
+            return;
+        }
+
+        double[][] features = fex.extractFeatures(song);
+        List<Double> feats = new ArrayList<>();
+        if(features != null && features[0] != null && features[0].length > 0) {
+            for(int i = 0; i < 8; i++) {
+                feats.add(features[i][0]);
+            }
+        }
+
+        String activityString = playlist.toUpperCase();
+        String feedbackString = "playlist";
+
+        List<Double> location = new ArrayList<>();
+        location.add(Double.parseDouble(getCurrentLocationLatitude()));
+        location.add(Double.parseDouble(getCurrentLocationLongitude()));
+
+        List<String> time = new ArrayList<>();
+        time.add(getHour());
+        time.add(getDay());
+
+        databaseReferencePlaylist.push().setValue(new SongFirebaseEntry(
+                song.getTitle(), song.getArtist(), feedbackString, activityString, location, time, feats
+        ));
+    }
+
+    void addRecordToFirebase(Song song, int feedback, int activityType, double[][] features) {
+        DatabaseReference databaseReferenceFeedback = databaseReference.child("feedback");
+
+        List<Double> feats = new ArrayList<>();
+        if(features != null && features[0] != null && features[0].length > 0) {
+            for(int i = 0; i < 8; i++) {
+                feats.add(features[i][0]);
+            }
+        }
+
+        List<Double> location = new ArrayList<>();
+        location.add(Double.parseDouble(getCurrentLocationLatitude()));
+        location.add(Double.parseDouble(getCurrentLocationLongitude()));
+
+        List<String> time = new ArrayList<>();
+        time.add(getHour());
+        time.add(getDay());
+
+        String feedbackString = "";
+        if (feedback == DISLIKE) {
+            feedbackString = "dislike";
+        }
+        else {
+            feedbackString = "like";
+        }
+
+        databaseReferenceFeedback.push().setValue(new SongFirebaseEntry(
+                song.getTitle(), song.getArtist(), feedbackString, getActivityString(activityType), location, time, feats
+        ));
     }
 }

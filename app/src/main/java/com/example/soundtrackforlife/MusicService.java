@@ -234,4 +234,23 @@ public class MusicService extends Service implements
         }
         return 0;
     }
+
+    // returning empty string might be problematic
+    public String getSongPath(String title, String artist) {
+        for (Song song : songs) {
+            if (song.getTitle().equals(title) && song.getArtist().equals(artist)) {
+                return song.getRelativePath();
+            }
+        }
+        return "";
+    }
+
+    public Song getSong(String title, String artist) {
+        for (Song song : songs) {
+            if (song.getTitle().equals(title) && song.getArtist().equals(artist)) {
+                return song;
+            }
+        }
+        return new Song(-1, "", "", "");
+    }
 }
