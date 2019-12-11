@@ -707,12 +707,8 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         String feedbackString = "playlist";
 
         List<Double> location = new ArrayList<>();
-        location.add(Double.parseDouble(getCurrentLocationLatitude()));
-        location.add(Double.parseDouble(getCurrentLocationLongitude()));
 
         List<String> time = new ArrayList<>();
-        time.add(getHour());
-        time.add(getDay());
 
         databaseReferencePlaylist.push().setValue(new SongFirebaseEntry(
                 song.getTitle(), song.getArtist(), feedbackString, activityString, location, time, feats
