@@ -1,7 +1,6 @@
 package com.example.soundtrackforlife;
 
 import android.content.Context;
-import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
@@ -20,6 +19,7 @@ public class FeedbackDBreader extends SQLiteOpenHelper {
                 + "value short not null,"
                 + "songtitle text not null,"
                 + "activity short not null,"
+                + "location text,"
                 + "feature1 float,"
                 + "feature2 float,"
                 + "feature3 float,"
@@ -27,7 +27,8 @@ public class FeedbackDBreader extends SQLiteOpenHelper {
                 + "feature5 float,"
                 + "feature6 float,"
                 + "feature7 float,"
-                + "feature8 float"
+                + "feature8 float,"
+                + "created DATETIME DEFAULT CURRENT_TIMESTAMP"
                 +");");
     }
 

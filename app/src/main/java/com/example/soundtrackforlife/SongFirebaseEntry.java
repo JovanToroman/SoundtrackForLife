@@ -10,8 +10,11 @@ public class SongFirebaseEntry {
     private List<Double> location;
     private List<String> time;
     private List<Double> features;
+    private Long id;
 
-    public SongFirebaseEntry(String songTitle, String songArtist, String songFeedback, String songActivity, List<Double> songLocation, List<String> songTime, List<Double> songFeatures) {
+    public SongFirebaseEntry(String songTitle, String songArtist, String songFeedback,
+                             String songActivity, List<Double> songLocation, List<String> songTime,
+                             List<Double> songFeatures) {
         title = songTitle;
         artist = songArtist;
         feedback = songFeedback;
@@ -19,6 +22,19 @@ public class SongFirebaseEntry {
         location = songLocation;
         time = songTime;
         features = songFeatures;
+    }
+
+    public SongFirebaseEntry(String songTitle, String songArtist, String songFeedback,
+                             String songActivity, List<Double> songLocation, List<String> songTime,
+                             List<Double> songFeatures, long id) {
+        title = songTitle;
+        artist = songArtist;
+        feedback = songFeedback;
+        activity = songActivity;
+        location = songLocation;
+        time = songTime;
+        features = songFeatures;
+        this.id = id;
     }
 
     public String getTitle() {
@@ -47,5 +63,9 @@ public class SongFirebaseEntry {
 
     public List<Double> getFeatures() {
         return features;
+    }
+
+    public Long getId() {
+        return id;
     }
 }

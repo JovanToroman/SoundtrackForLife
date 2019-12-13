@@ -222,6 +222,10 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
 
     public void songPicked(View view){
 
+        if (musicSrv.getMainActivity() == null) {
+            musicSrv.setMainActivity(this);
+        }
+
         if (view.getParent() == findViewById(R.id.song_search)) {
             Set<String> set = new HashSet<String> (getSharedPreferences("prefs", Context.MODE_PRIVATE).
                     getStringSet(selected_playlist, new HashSet<String>()));
@@ -291,21 +295,23 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         return super.onOptionsItemSelected(item);
     }
 
-    private void addRecordWithFeatures(Song song, int feedback) {
+    void addRecordWithFeatures(Song song, int feedback) {
         double[][] features = fex.extractFeatures(song);
-        addRecord(song, feedback, getCurrentActivity(), features);
+        int activity = getCurrentActivity();
+        long id = addRecord(song, feedback, activity, features);
+        addRecordToFirebase(song, feedback, activity, features, id);
     }
 
-    private void addRecord(Song song, int feedback, int activityType, double[][] features) {
+    private long addRecord(Song song, int feedback, int activityType, double[][] features) {
         // TODO: add location to saved data and time
         FeedbackDBreader dbHelper = new FeedbackDBreader(getApplicationContext());
         SQLiteDatabase db = dbHelper.getWritableDatabase();
 
         ContentValues values = new ContentValues();
         values.put("songtitle", song.getTitle());
-        //TODO: check if this is proper activity info
         values.put("activity", String.valueOf(activityType));
         values.put("value", feedback);
+        values.put("location", getCurrentLocationLatitude() + "," + getCurrentLocationLongitude());
 
         if(features != null && features[0] != null && features[0].length > 0) {
             for(int i = 0; i < 8; i++) {
@@ -314,8 +320,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         }
 
         long newRowId = db.insert("feedback", null, values);
-
-        addRecordToFirebase(song, feedback, activityType, features);
+        return newRowId;
     }
 
     public void displayMessage(String mess) {
@@ -715,7 +720,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         ));
     }
 
-    void addRecordToFirebase(Song song, int feedback, int activityType, double[][] features) {
+    void addRecordToFirebase(Song song, int feedback, int activityType, double[][] features, long id) {
         DatabaseReference databaseReferenceFeedback = databaseReference.child("feedback");
 
         List<Double> feats = new ArrayList<>();
@@ -742,7 +747,8 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         }
 
         databaseReferenceFeedback.push().setValue(new SongFirebaseEntry(
-                song.getTitle(), song.getArtist(), feedbackString, getActivityString(activityType), location, time, feats
+                song.getTitle(), song.getArtist(), feedbackString, getActivityString(activityType),
+                location, time, feats, id
         ));
     }
 }

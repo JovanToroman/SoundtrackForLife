@@ -111,7 +111,7 @@ public class FeatureExtractor {
         // if batch null due to exception or container null due to exception in extracting feats,
         // return empty multi-dim. array to not break app
         return batch == null || batch.getDataModel().container == null
-                ? new double[][]{}
+                ? new double[][]{{}}
                 : batch.getDataModel().container.getResults();
     }
 

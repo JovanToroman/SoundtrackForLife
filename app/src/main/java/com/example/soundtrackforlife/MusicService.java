@@ -3,6 +3,7 @@ package com.example.soundtrackforlife;
 import android.app.Service;
 import android.content.Intent;
 import android.media.MediaPlayer;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.IBinder;
 import java.util.ArrayList;
@@ -24,6 +25,7 @@ public class MusicService extends Service implements
 
     //media player
     private MediaPlayer player;
+    private MainActivity mainActivity;
     //song list
     private ArrayList<Song> songs;
     private String songTitle="";
@@ -126,10 +128,13 @@ public class MusicService extends Service implements
 
     @Override
     public void onCompletion(MediaPlayer mp) {
-        //if(player.getCurrentPosition()>0){ TODO: check if this will crash the app. Removed to allow transition from one song to other and display progress bar properly
+            try {
+                AsyncTask.execute(() -> mainActivity.addRecordWithFeatures(getCurrentSongData(), MainActivity.LIKE));
+            } catch (Exception e) {
+                Log.d("implicit_feedback", "Exception while implicit feedback");
+            }
             mp.reset();
             playNext();
-        //}
     }
 
     @Override
@@ -252,5 +257,13 @@ public class MusicService extends Service implements
             }
         }
         return new Song(-1, "", "", "");
+    }
+
+    public MainActivity getMainActivity() {
+        return mainActivity;
+    }
+
+    public void setMainActivity(MainActivity mainActivity) {
+        this.mainActivity = mainActivity;
     }
 }
