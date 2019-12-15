@@ -11,6 +11,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import android.Manifest;
@@ -91,6 +92,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     private FusedLocationProviderClient fusedLocationClient;
     private LocationCallback locationCallback;
     private LocationRequest locationRequest;
+    private FeedbackDBreader feedbackDBreader;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -110,6 +112,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, MY_REQUEST_PERMISSIONS_REQUEST_CODE);
         }
 
+        feedbackDBreader = new FeedbackDBreader(this);
         getSongList();
 
         Collections.sort(songList, new Comparator<Song>(){
@@ -226,6 +229,8 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
             musicSrv.setMainActivity(this);
         }
 
+        updateCounts();
+
         if (view.getParent() == findViewById(R.id.song_search)) {
             Set<String> set = new HashSet<String> (getSharedPreferences("prefs", Context.MODE_PRIVATE).
                     getStringSet(selected_playlist, new HashSet<String>()));
@@ -260,6 +265,22 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
                 playbackPaused = false;
             }
             controller.show(0);
+            incrementCounts();
+        }
+    }
+
+    private void updateCounts() {
+        Cursor countsCursor = feedbackDBreader.retrieveSongPlayCounts();
+
+        if (countsCursor != null && countsCursor.moveToNext()) {
+            do {
+                String songTitle = countsCursor.getString(FeedbackDBreader.SONG_TITLE_COLUMN_ID);
+                Integer activity = countsCursor.getInt(FeedbackDBreader.ACTIVITY_COLUMN_ID);
+                Integer count = countsCursor.getInt(FeedbackDBreader.COUNT_COLUMN_ID);
+
+                Map<Integer, Integer> counts = musicSrv.getSongByTitle(songTitle).getCounts();
+                counts.put(activity, count);
+            } while (countsCursor.moveToNext());
         }
     }
 
@@ -308,8 +329,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     }
 
     private long addRecord(Song song, int feedback, int activityType, double[][] features) {
-        FeedbackDBreader dbHelper = new FeedbackDBreader(getApplicationContext());
-        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        SQLiteDatabase db = feedbackDBreader.getWritableDatabase();
 
         ContentValues values = new ContentValues();
         values.put("songtitle", song.getTitle());
@@ -434,6 +454,8 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
             playbackPaused=false;
         }
         controller.show(0);
+
+        incrementCounts();
     }
 
     private void playPrev(){
@@ -443,6 +465,16 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
             playbackPaused=false;
         }
         controller.show(0);
+
+        incrementCounts();
+    }
+
+    private void incrementCounts() {
+        int activityId = getCurrentActivity();
+        Song currentSong = musicSrv.getCurrentSongData();
+        int currentCount = currentSong.getCounts().get(activityId);
+        currentSong.getCounts().put(activityId, ++currentCount);
+        feedbackDBreader.updateSongPlayCount(currentSong.getTitle(), activityId);
     }
 
     void startActivityRecognition() {
@@ -471,7 +503,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         return PendingIntent.getService(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
     }
 
-    private int getCurrentActivity() {
+    int getCurrentActivity() {
         int defaultValue = -1;
 
         return getSharedPreferences("prefs", Context.MODE_PRIVATE).getInt("activity", defaultValue);

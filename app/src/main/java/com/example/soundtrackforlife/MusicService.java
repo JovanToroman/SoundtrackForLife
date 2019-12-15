@@ -33,9 +33,10 @@ public class MusicService extends Service implements
 
     //current position
     private int songPosn;
+    private int prevSongPosn;
     private final IBinder musicBind = new MusicBinder();
 
-    private boolean shuffle=false;
+    private boolean shuffle=true;
     private Random rand;
 
     @Override
@@ -55,6 +56,7 @@ public class MusicService extends Service implements
         super.onCreate();
         //initialize position
         songPosn=0;
+        prevSongPosn = songs.size() - 1;
         //create player
         player = new MediaPlayer();
         rand=new Random();
@@ -128,6 +130,7 @@ public class MusicService extends Service implements
 
     @Override
     public void onCompletion(MediaPlayer mp) {
+            prevSongPosn = songPosn;
             try {
                 AsyncTask.execute(() -> mainActivity.addRecordWithFeatures(getCurrentSongData(), MainActivity.LIKE));
             } catch (Exception e) {
@@ -199,27 +202,39 @@ public class MusicService extends Service implements
     }
 
     public void playPrev(){
-        songPosn--;
-        if(songPosn < 0){
-            songPosn=songs.size()-1;
-        }
+        songPosn = prevSongPosn;
         playSong();
     }
 
-    //skip to next
+    //add implicit feedback for songs which are interrupted. Give feedback based on if it is over half of the song or not
     public void playNext(){
-        if(shuffle){
-            int newSong = songPosn;
-            while(newSong==songPosn){
-                newSong=rand.nextInt(songs.size());
-            }
-            songPosn=newSong;
-        }
-        else{
-            songPosn++;
-            if(songPosn>=songs.size()) songPosn=0;
-        }
+        prevSongPosn = songPosn;
+        songPosn = resolveNextSong(shuffle);
         playSong();
+    }
+
+    private int resolveNextSong(boolean random){
+        int activityId = mainActivity.getCurrentActivity();
+
+        int minCount = Integer.MAX_VALUE;
+        for (Song s : songs) {
+            if (s.getCounts().get(activityId) < minCount) {
+                minCount = s.getCounts().get(activityId);
+            }
+        }
+        int newSong = songPosn;
+
+        if (random) {
+            while (newSong == songPosn || songs.get(newSong).getCounts().get(activityId) != minCount) {
+                newSong = rand.nextInt(songs.size());
+            }
+        } else {
+            newSong++;
+            if(newSong >= songs.size()) {
+                newSong = 0;
+            }
+        }
+        return newSong;
     }
 
     public int getSongPosn(String title, String artist) {
@@ -253,6 +268,15 @@ public class MusicService extends Service implements
     public Song getSong(String title, String artist) {
         for (Song song : songs) {
             if (song.getTitle().equals(title) && song.getArtist().equals(artist)) {
+                return song;
+            }
+        }
+        return new Song(-1, "", "", "");
+    }
+
+    public Song getSongByTitle(String title) {
+        for (Song song : songs) {
+            if (song.getTitle() != null && song.getTitle().equals(title)) {
                 return song;
             }
         }
