@@ -282,10 +282,10 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
                 musicSrv=null;
                 System.exit(0);
                 break;
-                // TODO: handle implicit feedback
             case R.id.action_dislike:
                 AsyncTask.execute(() -> addRecordWithFeatures(musicSrv.getCurrentSongData(), DISLIKE));
                 displayMessage("You didn't like " + musicSrv.getCurrentSongData().getTitle());
+                playNext();
                 break;
             case R.id.action_like:
                 AsyncTask.execute(() -> addRecordWithFeatures(musicSrv.getCurrentSongData(), LIKE));
@@ -303,7 +303,6 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     }
 
     private long addRecord(Song song, int feedback, int activityType, double[][] features) {
-        // TODO: add location to saved data and time
         FeedbackDBreader dbHelper = new FeedbackDBreader(getApplicationContext());
         SQLiteDatabase db = dbHelper.getWritableDatabase();
 
