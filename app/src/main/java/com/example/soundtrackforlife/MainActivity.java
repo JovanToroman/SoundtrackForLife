@@ -272,6 +272,10 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
+        // preventing npe on implicit feedback when feedback is given before any song is played
+        if (musicSrv.getMainActivity() == null) {
+            musicSrv.setMainActivity(this);
+        }
         switch (item.getItemId()) {
             case R.id.action_shuffle:
                 boolean shuffle = musicSrv.setShuffle();
@@ -283,8 +287,9 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
                 System.exit(0);
                 break;
             case R.id.action_dislike:
-                AsyncTask.execute(() -> addRecordWithFeatures(musicSrv.getCurrentSongData(), DISLIKE));
-                displayMessage("You didn't like " + musicSrv.getCurrentSongData().getTitle());
+                Song currentSong = musicSrv.getCurrentSongData();
+                AsyncTask.execute(() -> addRecordWithFeatures(currentSong, DISLIKE));
+                displayMessage("You didn't like " + currentSong.getTitle());
                 playNext();
                 break;
             case R.id.action_like:
@@ -323,7 +328,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     }
 
     public void displayMessage(String mess) {
-        Snackbar.make(findViewById(R.id.coordinatorLayout), mess, Snackbar.LENGTH_SHORT).show();
+        Snackbar.make(findViewById(R.id.coordinatorLayout), mess, Snackbar.LENGTH_LONG).show();
     }
 
     @Override
