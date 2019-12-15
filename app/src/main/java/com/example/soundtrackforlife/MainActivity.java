@@ -64,6 +64,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     
     public static final int LIKE = 1;
     public static final int DISLIKE = 0;
+    long UPDATE_INTERVAL_IN_MILLISECONDS = 360 * 1000;
 
     private ArrayList<Song> songList;
     private ListView songView;
@@ -90,7 +91,6 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     private FusedLocationProviderClient fusedLocationClient;
     private LocationCallback locationCallback;
     private LocationRequest locationRequest;
-    long UPDATE_INTERVAL_IN_MILLISECONDS = 360 * 1000;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
