@@ -56,7 +56,7 @@ public class MusicService extends Service implements
         super.onCreate();
         //initialize position
         songPosn=0;
-        prevSongPosn = songs.size() - 1;
+        prevSongPosn = 0; // songs.size() - 1 produces error
         //create player
         player = new MediaPlayer();
         rand=new Random();

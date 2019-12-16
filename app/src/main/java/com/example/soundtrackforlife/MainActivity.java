@@ -93,6 +93,8 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     private LocationCallback locationCallback;
     private LocationRequest locationRequest;
     private FeedbackDBreader feedbackDBreader;
+    private MenuItem backButton;
+    private String currentScreen;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -147,6 +149,14 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         locationRequest.setInterval(UPDATE_INTERVAL_IN_MILLISECONDS);
         locationRequest.setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY);
         fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper());
+
+        currentScreen = "main";
+    }
+
+    @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        backButton = menu.findItem(R.id.action_back);
+        return super.onPrepareOptionsMenu(menu);
     }
 
     @Override
@@ -316,6 +326,27 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
             case R.id.action_like:
                 AsyncTask.execute(() -> addRecordWithFeatures(musicSrv.getCurrentSongData(), LIKE));
                 displayMessage("You liked " + musicSrv.getCurrentSongData().getTitle());
+                break;
+            case R.id.action_back:
+                if (currentScreen == "playlist") {
+                    // go to playlist maker
+                    currentScreen = "playlistMaker";
+                    setContentView(R.layout.playlist_maker);
+                }
+                else if (currentScreen == "songFinder") {
+                    // go to playlist
+                    currentScreen = "playlist";
+                    setupPlaylistView();
+                }
+                else {
+                    // go to main
+                    currentScreen = "main";
+                    backButton.setVisible(false);
+                    setContentView(R.layout.activity_main);
+                    songView = findViewById(R.id.song_list);
+                    SongAdapter songAdt = new SongAdapter(this, songList);
+                    songView.setAdapter(songAdt);
+                }
                 break;
         }
         return super.onOptionsItemSelected(item);
@@ -511,6 +542,8 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
 
     public void goToPlaylistMaker(View view) {
         setContentView(R.layout.playlist_maker);
+        currentScreen = "playlistMaker";
+        backButton.setVisible(true);
     }
 
     public void goToPlaylist(View view) {
@@ -537,6 +570,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
                 break;
         }
 
+        currentScreen = "playlist";
         setupPlaylistView();
     }
 
@@ -574,6 +608,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         songSearchList = getRefreshedSearchList("");
         songSearchAdapter = new SongAdapter(this, songSearchList);
         songSearchListView.setAdapter(songSearchAdapter);
+        currentScreen = "songFinder";
 
         searchInput = findViewById(R.id.search_input);
         searchInput.addTextChangedListener(new TextWatcher() {
