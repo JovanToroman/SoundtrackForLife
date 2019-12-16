@@ -188,24 +188,27 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         }
     };
 
-    @Override
+    /*@Override
     protected void onPause(){
         super.onPause();
         paused=true;
-    }
+    }*/
 
     @Override
     protected void onResume(){
         super.onResume();
-        if(paused){
+        /*if(paused){
             setController();
             paused=false;
+        }*/
+        if (controller.isSongPlaying()) {
+            controller.show(0);
         }
     }
 
     @Override
     protected void onStop() {
-        controller.hide();
+        controller.hideCustom();
         super.onStop();
     }
 
@@ -258,9 +261,12 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
                     ((TextView)((LinearLayout) view).getChildAt(1)).getText().toString(),
                     selected_playlist));
             setupPlaylistView();
+            if (controller.isSongPlaying()) {
+                controller.show(0);
+            }
         }
         else {
-
+            controller.setSongIsPlaying(true);
             int songPos = Integer.parseInt(view.getTag().toString());
             if (view.getParent() == findViewById(R.id.song_playlist)) {
                 songPos = musicSrv.getSongPosn(
@@ -337,6 +343,9 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
                     // go to playlist
                     currentScreen = "playlist";
                     setupPlaylistView();
+                    if (controller.isSongPlaying()) {
+                        controller.show(0);
+                    }
                 }
                 else {
                     // go to main
@@ -610,6 +619,10 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         songSearchListView.setAdapter(songSearchAdapter);
         currentScreen = "songFinder";
 
+        if (controller.isShowing()) {
+            controller.hideCustom();
+        }
+
         searchInput = findViewById(R.id.search_input);
         searchInput.addTextChangedListener(new TextWatcher() {
             @Override
@@ -706,6 +719,9 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         }
         addRecordToFirebaseManual(songStr);
         setupPlaylistView();
+        if (controller.isSongPlaying()) {
+            controller.show(0);
+        }
     }
 
     String getHour() {
