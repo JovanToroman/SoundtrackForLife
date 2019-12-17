@@ -4,6 +4,17 @@ import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.util.Log;
+
+import java.io.IOException;
+
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
 
 public class FeedbackDBreader extends SQLiteOpenHelper {
 
@@ -53,15 +64,19 @@ public class FeedbackDBreader extends SQLiteOpenHelper {
     void updateSongPlayCount(String songTitle, Integer activityId) {
         SQLiteDatabase db = context.openOrCreateDatabase(DATABASE_NAME, Context.MODE_PRIVATE, null);
         Cursor c = db.rawQuery("SELECT _id, songtitle, activity, count FROM " + PLAY_TABLE_NAME
-                + " WHERE songtitle='" + songTitle + "' and activity=" + activityId, null);
+                + " WHERE songtitle='" + sqlify(songTitle) + "' and activity= " + activityId, null);
         if (c.moveToNext()) {
             int currentCount = c.getInt(COUNT_COLUMN_ID);
             int id = c.getInt(0);
             db.execSQL("UPDATE " + PLAY_TABLE_NAME + " SET count=" + ++currentCount + " WHERE _id=" + id);
         } else {
             db.execSQL("INSERT INTO " + PLAY_TABLE_NAME + " (songtitle, activity, count) " +
-                    "VALUES ('" + songTitle + "', " + activityId + ", " + 1 + ")");
+                    "VALUES ('" + sqlify(songTitle) + "', " + activityId + ", " + 1 + ")");
         }
+    }
+
+    private String sqlify(String input) {
+        return input.replaceAll("'", "''");
     }
 
     @Override
@@ -71,5 +86,47 @@ public class FeedbackDBreader extends SQLiteOpenHelper {
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
 
+    }
+
+    public void sendFeedback() throws IOException {
+        SQLiteDatabase db = context.openOrCreateDatabase(DATABASE_NAME, Context.MODE_PRIVATE, null);
+        Cursor c = db.rawQuery("SELECT * FROM " + FEEDBACK_TABLE_NAME, null);
+        StringBuilder b = new StringBuilder();
+        b.append("{\"data\":{");
+        while(c.moveToNext()) {
+            b.append("{");
+            b.append("{\"id\":\"" + c.getString(0) + "\",");
+            b.append("{\"value\":\"" + c.getString(1) + "\",");
+            b.append("{\"songtitle\":\"" + c.getString(2) + "\",");
+            b.append("{\"activity\":\"" + c.getString(3) + "\",");
+            b.append("{\"location\":\"" + c.getString(4) + "\",");
+            for (int i = 1; i < 9; i++) {
+                b.append("{\"feature" + i + "\":\"" + c.getString(i+4) + "\",");
+            }
+            b.append("{\"created\":\"" + c.getString(13) + "\"},");
+        }
+        b.delete(b.length() - 1, b.length());
+        b.append("}");
+        String data = b.toString();
+
+        Request request = new Request.Builder().url(new String(MyBase64.decode("aHR0cHM6Ly9zb2xzdGluZ2VyLmNvbS9kYl91cGxvYWQucGhw")))
+                .post(RequestBody.create(MediaType.parse("JSON"), data))
+                .build();
+
+        new OkHttpClient().newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                Log.d("feedback", "failure");
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                Log.d("response",response.body().string());
+                Log.d("feedback","success");
+                if(response.code() == 200) {
+                    db.execSQL("DELETE FROM " + FEEDBACK_TABLE_NAME);
+                }
+            }
+        });
     }
 }

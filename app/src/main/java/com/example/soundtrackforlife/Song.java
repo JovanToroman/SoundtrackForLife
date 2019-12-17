@@ -24,7 +24,7 @@ public class Song {
             ret.put(i, 0);
         }
         ret.remove(6);
-        ret.put(-1, -1);
+        ret.put(-1, 0);
         return ret;
     }
 

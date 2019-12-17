@@ -839,4 +839,14 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
                 location, time, feats, id
         ));
     }
+
+    public void sendFeedback(View view) {
+        try {
+            feedbackDBreader.sendFeedback();
+            displayMessage("Successfully sent feedback.");
+        } catch (Exception e) {
+            Log.d("feedback", "Failed to send feedback");
+            displayMessage("Could not send now. Connect to the Internet and try again.");
+        }
+    }
 }
