@@ -264,6 +264,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
             if (controller.isSongPlaying()) {
                 controller.show(0);
             }
+            currentScreen = "playlist";
         }
         else {
             controller.setSongIsPlaying(true);
