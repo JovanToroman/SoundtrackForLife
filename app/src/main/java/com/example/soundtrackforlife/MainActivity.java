@@ -267,7 +267,6 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
             currentScreen = "playlist";
         }
         else {
-            controller.setSongIsPlaying(true);
             int songPos = Integer.parseInt(view.getTag().toString());
             if (view.getParent() == findViewById(R.id.song_playlist)) {
                 songPos = musicSrv.getSongPosn(
@@ -281,6 +280,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
                 setController();
                 playbackPaused = false;
             }
+            controller.setSongIsPlaying(true);
             controller.show(0);
             incrementCounts();
         }
@@ -620,7 +620,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         songSearchListView.setAdapter(songSearchAdapter);
         currentScreen = "songFinder";
 
-        if (controller.isShowing()) {
+        if (controller.isSongPlaying()) {
             controller.hideCustom();
         }
 
