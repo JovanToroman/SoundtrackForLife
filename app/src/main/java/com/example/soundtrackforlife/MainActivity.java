@@ -73,7 +73,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     private Intent playIntent;
     private boolean musicBound=false;
     private MusicController controller;
-    private boolean paused=false, playbackPaused=false;
+    //private boolean paused=false, playbackPaused=false;
     final int MY_PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE = 0;
     final int MY_REQUEST_PERMISSIONS_REQUEST_CODE = 2;
     private ActivityRecognitionClient activityRecognitionClient;
@@ -262,6 +262,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
                     selected_playlist));
             setupPlaylistView();
             if (controller.isSongPlaying()) {
+                setControllerAnchor();
                 controller.show(0);
             }
             currentScreen = "playlist";
@@ -276,10 +277,11 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
 
             musicSrv.setSong(songPos);
             musicSrv.playSong();
-            if (playbackPaused) {
+            /*if (playbackPaused) {
                 setController();
                 playbackPaused = false;
-            }
+            }*/
+            setControllerAnchor();
             controller.setSongIsPlaying(true);
             controller.show(0);
             incrementCounts();
@@ -345,6 +347,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
                     currentScreen = "playlist";
                     setupPlaylistView();
                     if (controller.isSongPlaying()) {
+                        setControllerAnchor();
                         controller.show(0);
                     }
                 }
@@ -401,7 +404,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
 
     @Override
     public void pause() {
-        playbackPaused=true;
+        //playbackPaused=true;
         musicSrv.pausePlayer();
     }
 
@@ -483,17 +486,26 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
             }
         });
         controller.setMediaPlayer(this);
-        controller.setAnchorView(findViewById(R.id.song_view));
+        setControllerAnchor();
         controller.setEnabled(true);
         controller.setActivated(true);
     }
 
+    private void setControllerAnchor() {
+        if (currentScreen == "main") {
+            controller.setAnchorView(findViewById(R.id.song_view));
+        }
+        else {
+            controller.setAnchorView(findViewById(R.id.playlist_view));
+        }
+    }
+
     private void playNext(){
         musicSrv.playNext();
-        if(playbackPaused){
+        /*if(playbackPaused){
             setController();
             playbackPaused=false;
-        }
+        }*/
         controller.show(0);
 
         incrementCounts();
@@ -501,10 +513,10 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
 
     private void playPrev(){
         musicSrv.playPrev();
-        if(playbackPaused){
+        /*if(playbackPaused){
             setController();
             playbackPaused=false;
-        }
+        }*/
         controller.show(0);
 
         incrementCounts();
@@ -721,6 +733,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         addRecordToFirebaseManual(songStr);
         setupPlaylistView();
         if (controller.isSongPlaying()) {
+            setControllerAnchor();
             controller.show(0);
         }
     }
