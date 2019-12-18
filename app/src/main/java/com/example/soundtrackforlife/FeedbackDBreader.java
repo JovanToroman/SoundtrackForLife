@@ -6,6 +6,8 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
 
+import com.google.android.material.snackbar.Snackbar;
+
 import java.io.IOException;
 
 import okhttp3.Call;
@@ -25,9 +27,9 @@ public class FeedbackDBreader extends SQLiteOpenHelper {
     public static final Integer ACTIVITY_COLUMN_ID = 2;
     public static final Integer COUNT_COLUMN_ID = 3;
 
-    private Context context;
+    private MainActivity context;
 
-    public FeedbackDBreader(Context context) {
+    public FeedbackDBreader(MainActivity context) {
         super(context, DATABASE_NAME, null, 1);
         this.context = context;
         SQLiteDatabase db = context.openOrCreateDatabase(DATABASE_NAME, Context.MODE_PRIVATE, null);
@@ -117,6 +119,7 @@ public class FeedbackDBreader extends SQLiteOpenHelper {
             @Override
             public void onFailure(Call call, IOException e) {
                 Log.d("feedback", "failure");
+                displayMessage("Could not send now. Connect to the Internet and try again.");
             }
 
             @Override
@@ -126,7 +129,12 @@ public class FeedbackDBreader extends SQLiteOpenHelper {
                 if(response.code() == 200) {
                     db.execSQL("DELETE FROM " + FEEDBACK_TABLE_NAME);
                 }
+                displayMessage("Successfully sent feedback.");
             }
         });
+    }
+
+    public void displayMessage(String mess) {
+        Snackbar.make(context.findViewById(R.id.coordinatorLayout), mess, Snackbar.LENGTH_LONG).show();
     }
 }

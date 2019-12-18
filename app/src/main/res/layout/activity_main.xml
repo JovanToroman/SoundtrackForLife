@@ -22,7 +22,7 @@
             android:text="Make playlists" />
 
         <Button
-            android:id="@+id/export_db"
+            android:id="@+id/send_feedback"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:onClick="sendFeedback"

@@ -856,10 +856,9 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     public void sendFeedback(View view) {
         try {
             feedbackDBreader.sendFeedback();
-            displayMessage("Successfully sent feedback.");
+            findViewById(R.id.send_feedback).setVisibility(View.GONE);
         } catch (Exception e) {
             Log.d("feedback", "Failed to send feedback");
-            displayMessage("Could not send now. Connect to the Internet and try again.");
         }
     }
 }
