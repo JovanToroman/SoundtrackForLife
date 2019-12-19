@@ -1,4 +1,4 @@
-package com.example.soundtrackforlife;
+package com.fri.soundtrackforlife;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -40,7 +40,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.ListView;
-import com.example.soundtrackforlife.MusicService.MusicBinder;
+import com.fri.soundtrackforlife.MusicService.MusicBinder;
 import com.google.android.gms.location.ActivityRecognitionClient;
 import com.google.android.gms.location.DetectedActivity;
 import com.google.android.gms.location.FusedLocationProviderClient;

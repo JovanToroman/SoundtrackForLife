@@ -1,13 +1,9 @@
-package com.example.soundtrackforlife;
+package com.fri.soundtrackforlife;
 
-import android.app.Activity;
 import android.app.IntentService;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.os.Looper;
-import android.preference.PreferenceManager;
-import android.util.Log;
 import android.widget.Toast;
 
 import com.google.android.gms.location.ActivityRecognitionResult;

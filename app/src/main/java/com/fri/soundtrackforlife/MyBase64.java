@@ -1,4 +1,4 @@
-package com.example.soundtrackforlife;
+package com.fri.soundtrackforlife;
 
 public class MyBase64 {
 

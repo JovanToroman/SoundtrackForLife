@@ -1,4 +1,4 @@
-package com.example.soundtrackforlife;
+package com.fri.soundtrackforlife;
 
 import android.Manifest;
 import android.app.Activity;
