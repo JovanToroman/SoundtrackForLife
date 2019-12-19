@@ -113,6 +113,9 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, MY_REQUEST_PERMISSIONS_REQUEST_CODE);
         }
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.INTERNET) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.INTERNET}, 3);
+        }
 
         feedbackDBreader = new FeedbackDBreader(this);
         getSongList();
@@ -202,6 +205,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
             paused=false;
         }*/
         if (controller.isSongPlaying()) {
+            setControllerAnchor();
             controller.show(0);
         }
     }
