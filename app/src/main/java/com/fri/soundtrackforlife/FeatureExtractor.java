@@ -120,10 +120,11 @@ public class FeatureExtractor {
             for (int i = 0; i < 8; i++) {
                 ret[i][0] = c.getDouble(i + 5);
             }
+            c.close();
             return ret;
-        } else {
-            return null;
         }
+        c.close();
+        return null;
     }
 
     private double[][] extractResults(Batch batch) {

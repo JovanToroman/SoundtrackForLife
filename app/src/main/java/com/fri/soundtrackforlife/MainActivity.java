@@ -326,6 +326,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
                 counts.put(activity, count);
             } while (countsCursor.moveToNext());
         }
+        countsCursor.close();
     }
 
     @Override
@@ -770,6 +771,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
             setControllerAnchor();
             controller.show(0);
         }
+        currentScreen = "playlist";
     }
 
     String getHour() {

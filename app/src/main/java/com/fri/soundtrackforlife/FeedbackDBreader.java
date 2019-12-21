@@ -60,9 +60,7 @@ public class FeedbackDBreader extends SQLiteOpenHelper {
 
     Cursor retrieveSongPlayCounts(){
         SQLiteDatabase db = context.openOrCreateDatabase(DATABASE_NAME, Context.MODE_PRIVATE, null);
-        Cursor c = db.rawQuery("SELECT _id, songtitle, activity, count FROM " + PLAY_TABLE_NAME, null);
-        db.close();
-        return c;
+        return db.rawQuery("SELECT _id, songtitle, activity, count FROM " + PLAY_TABLE_NAME, null);
     }
 
     void updateSongPlayCount(String songTitle, Integer activityId) {
@@ -144,10 +142,8 @@ public class FeedbackDBreader extends SQLiteOpenHelper {
 
     public Cursor retrieveExistingFeedback(Song s) {
         SQLiteDatabase db = context.openOrCreateDatabase(DATABASE_NAME, Context.MODE_PRIVATE, null);
-        Cursor ret = db.rawQuery("SELECT * FROM " + FEEDBACK_TABLE_NAME
+        return db.rawQuery("SELECT * FROM " + FEEDBACK_TABLE_NAME
                 + " WHERE songtitle='" + s.getTitle() + "' AND feature1 IS NOT NULL", null);
-        db.close();
-        return ret;
     }
 
     public void displayMessage(String mess) {
