@@ -140,7 +140,8 @@ public class FeatureExtractor {
         File f = new File(relativePath);
         InputStream fis = new FileInputStream(f);
         OutputStream o = new FileOutputStream(STORAGE_EMULATED_0_DOWNLOAD + "temp_out");
-        for(int i = 0; i < fis.available()/50; i++) {
+        int size = fis.available();
+        for(int i = size / 2; i < 6 * size / 10; i++) {
             o.write(fis.read());
         }
 
@@ -153,7 +154,7 @@ public class FeatureExtractor {
         // housekeeping
         fis.close();
         o.close();
-        File temp = new File(STORAGE_EMULATED_0_DOWNLOAD + "temporary_output_file");
+        File temp = new File(STORAGE_EMULATED_0_DOWNLOAD + "temp_out");
         temp.delete();
 
         return check;
