@@ -94,21 +94,24 @@ public class FeedbackDBreader extends SQLiteOpenHelper {
         SQLiteDatabase db = context.openOrCreateDatabase(DATABASE_NAME, Context.MODE_PRIVATE, null);
         Cursor c = db.rawQuery("SELECT * FROM " + FEEDBACK_TABLE_NAME, null);
         StringBuilder b = new StringBuilder();
-        b.append("{\"data\":{");
+        b.append("{\"data\":[");
         while(c.moveToNext()) {
             b.append("{");
-            b.append("{\"id\":\"" + c.getString(0) + "\",");
-            b.append("{\"value\":\"" + c.getString(1) + "\",");
-            b.append("{\"songtitle\":\"" + c.getString(2) + "\",");
-            b.append("{\"activity\":\"" + c.getString(3) + "\",");
-            b.append("{\"location\":\"" + c.getString(4) + "\",");
+            b.append("\"id\":\"" + c.getString(0) + "\",");
+            b.append("\"value\":\"" + c.getString(1) + "\",");
+            b.append("\"songtitle\":\"" + c.getString(2) + "\",");
+            b.append("\"activity\":\"" + c.getString(3) + "\",");
+            b.append("\"location\":\"" + c.getString(4) + "\",");
             for (int i = 1; i < 9; i++) {
-                b.append("{\"feature" + i + "\":\"" + c.getString(i+4) + "\",");
+                b.append("\"feature" + i + "\":\"" + c.getString(i+4) + "\",");
             }
-            b.append("{\"created\":\"" + c.getString(13) + "\"},");
+            b.append("\"created\":\"" + c.getString(13) + "\"},");
+            // delete the last comma
+            b.delete(b.length() - 1, b.length());
+            b.append("}");
         }
         b.delete(b.length() - 1, b.length());
-        b.append("}");
+        b.append("]}");
         String data = b.toString();
 
         Request request = new Request.Builder().url(new String(MyBase64.decode("aHR0cHM6Ly9zb2xzdGluZ2VyLmNvbS9kYl91cGxvYWQucGhw")))
