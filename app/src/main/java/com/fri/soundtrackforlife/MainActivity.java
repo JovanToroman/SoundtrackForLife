@@ -794,7 +794,19 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
 
     void addRecordToFirebaseManual(String title) {
         DatabaseReference databaseReferenceManual = databaseReference.child("manual");
-        databaseReferenceManual.push().setValue(title);
+
+        List<Double> feats = new ArrayList<>();
+
+        String activityString = selected_playlist.toUpperCase();
+        String feedbackString = "manual";
+
+        List<Double> location = new ArrayList<>();
+
+        List<String> time = new ArrayList<>();
+
+        databaseReferenceManual.push().setValue(new SongFirebaseEntry(
+                title, "", feedbackString, activityString, location, time, feats
+        ));
     }
 
     void addRecordToFireBasePlaylist(String title, String artist, String playlist) {
