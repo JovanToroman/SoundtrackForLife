@@ -206,7 +206,6 @@ public class MusicService extends Service implements
         playSong();
     }
 
-    //add implicit feedback for songs which are interrupted. Give feedback based on if it is over half of the song or not
     public void playNext(){
         prevSongPosn = songPosn;
         songPosn = resolveNextSong(shuffle);
@@ -289,5 +288,9 @@ public class MusicService extends Service implements
 
     public void setMainActivity(MainActivity mainActivity) {
         this.mainActivity = mainActivity;
+    }
+
+    public MediaPlayer getPlayer() {
+        return player;
     }
 }
