@@ -55,11 +55,13 @@ public class FeedbackDBreader extends SQLiteOpenHelper {
                 + "count integer not null,"
                 + "created DATETIME DEFAULT CURRENT_TIMESTAMP"
                 +");");
+        db.close();
     }
 
     Cursor retrieveSongPlayCounts(){
         SQLiteDatabase db = context.openOrCreateDatabase(DATABASE_NAME, Context.MODE_PRIVATE, null);
         Cursor c = db.rawQuery("SELECT _id, songtitle, activity, count FROM " + PLAY_TABLE_NAME, null);
+        db.close();
         return c;
     }
 
@@ -75,6 +77,7 @@ public class FeedbackDBreader extends SQLiteOpenHelper {
             db.execSQL("INSERT INTO " + PLAY_TABLE_NAME + " (songtitle, activity, count) " +
                     "VALUES ('" + sqlify(songTitle) + "', " + activityId + ", " + 1 + ")");
         }
+        db.close();
     }
 
     private String sqlify(String input) {
@@ -123,6 +126,7 @@ public class FeedbackDBreader extends SQLiteOpenHelper {
             public void onFailure(Call call, IOException e) {
                 Log.d("feedback", "failure");
                 displayMessage("Could not send now. Connect to the Internet and try again.");
+                db.close();
             }
 
             @Override
@@ -132,6 +136,7 @@ public class FeedbackDBreader extends SQLiteOpenHelper {
                 if(response.code() == 200) {
                     db.execSQL("DELETE FROM " + FEEDBACK_TABLE_NAME);
                 }
+                db.close();
                 displayMessage("Successfully sent feedback.");
             }
         });
@@ -139,8 +144,10 @@ public class FeedbackDBreader extends SQLiteOpenHelper {
 
     public Cursor retrieveExistingFeedback(Song s) {
         SQLiteDatabase db = context.openOrCreateDatabase(DATABASE_NAME, Context.MODE_PRIVATE, null);
-        return db.rawQuery("SELECT * FROM " + FEEDBACK_TABLE_NAME
+        Cursor ret = db.rawQuery("SELECT * FROM " + FEEDBACK_TABLE_NAME
                 + " WHERE songtitle='" + s.getTitle() + "' AND feature1 IS NOT NULL", null);
+        db.close();
+        return ret;
     }
 
     public void displayMessage(String mess) {

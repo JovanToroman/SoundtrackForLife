@@ -526,11 +526,12 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     }
 
     private void playNext(){
-        Song currentSong = musicSrv.getCurrentSongData();
         try {
+            Song currentSong = musicSrv.getCurrentSongData();
+            int current = musicSrv.getPlayer().getCurrentPosition();
+            int duration = musicSrv.getPlayer().getDuration();
             AsyncTask.execute(()-> addRecordWithFeatures(currentSong,
-                    musicSrv.getPlayer().getCurrentPosition() < musicSrv.getPlayer().getDuration() / 2
-                            ? MainActivity.DISLIKE : MainActivity.LIKE));
+                    current < (duration / 2) ? MainActivity.DISLIKE : MainActivity.LIKE));
         } catch (Exception e) {
             Log.d("implicit_feedback", "Exception while implicit feedback");
         }
