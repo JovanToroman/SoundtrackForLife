@@ -2,6 +2,7 @@ package com.fri.soundtrackforlife;
 
 import android.content.Context;
 import android.content.res.AssetManager;
+import android.database.Cursor;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -85,6 +86,11 @@ public class FeatureExtractor {
 
         try {
 
+            double[][] existingFeedback = reuseExistingFeedback(s);
+            if (existingFeedback != null) {
+                return existingFeedback;
+            }
+
             batch = createBatch();
 
             setupDataModel(batch);
@@ -105,6 +111,19 @@ public class FeatureExtractor {
         System.out.println("done");
 
         return results;
+    }
+
+    private double[][] reuseExistingFeedback(Song s) {
+        double[][] ret = new double[8][1];
+        Cursor c = ma.getFeedbackDBreader().retrieveExistingFeedback(s);
+        if(c.moveToNext()) {
+            for (int i = 0; i < 8; i++) {
+                ret[i][0] = c.getDouble(i + 5);
+            }
+            return ret;
+        } else {
+            return null;
+        }
     }
 
     private double[][] extractResults(Batch batch) {

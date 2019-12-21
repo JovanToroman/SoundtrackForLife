@@ -904,4 +904,8 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
             Log.d("feedback", "Failed to send feedback");
         }
     }
+
+    public FeedbackDBreader getFeedbackDBreader() {
+        return feedbackDBreader;
+    }
 }
