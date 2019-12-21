@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -66,6 +67,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     public static final int LIKE = 1;
     public static final int DISLIKE = 0;
     long UPDATE_INTERVAL_IN_MILLISECONDS = 360 * 1000;
+    private Map<String, Integer> playlistActivityCodes;
 
     private ArrayList<Song> songList;
     private ListView songView;
@@ -104,18 +106,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         songList = new ArrayList<>();
         fex = new FeatureExtractor(this.getAssets(), this);
 
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, MY_PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE);
-        }
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
-        }
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, MY_REQUEST_PERMISSIONS_REQUEST_CODE);
-        }
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.INTERNET) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.INTERNET}, 3);
-        }
+        checkPermissions();
 
         feedbackDBreader = new FeedbackDBreader(this);
         getSongList();
@@ -136,6 +127,23 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         firebaseDatabase = FirebaseDatabase.getInstance();
         databaseReference = firebaseDatabase.getReference("songs");
 
+        setupLocationSensing();
+
+        currentScreen = "main";
+
+        initializeActivityMap();
+    }
+
+    private void initializeActivityMap() {
+        playlistActivityCodes = new HashMap<>();
+        playlistActivityCodes.put("in_vehicle", DetectedActivity.IN_VEHICLE);
+        playlistActivityCodes.put("on_bicycle", DetectedActivity.ON_BICYCLE);
+        playlistActivityCodes.put("walking", DetectedActivity.WALKING);
+        playlistActivityCodes.put("running", DetectedActivity.RUNNING);
+        playlistActivityCodes.put("still", DetectedActivity.STILL);
+    }
+
+    private void setupLocationSensing() {
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
         locationCallback = new LocationCallback() {
             @Override
@@ -152,8 +160,21 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         locationRequest.setInterval(UPDATE_INTERVAL_IN_MILLISECONDS);
         locationRequest.setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY);
         fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper());
+    }
 
-        currentScreen = "main";
+    private void checkPermissions() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, MY_PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE);
+        }
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
+        }
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, MY_REQUEST_PERMISSIONS_REQUEST_CODE);
+        }
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.INTERNET) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.INTERNET}, 3);
+        }
     }
 
     @Override
@@ -260,7 +281,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
                         putStringSet(selected_playlist, set).
                         apply();
             }
-            AsyncTask.execute(() -> addRecordToFireBasePlaylist(
+            AsyncTask.execute(() -> addRecordPlaylist(
                     ((TextView)((LinearLayout) view).getChildAt(0)).getText().toString(),
                     ((TextView)((LinearLayout) view).getChildAt(1)).getText().toString(),
                     selected_playlist));
@@ -797,15 +818,21 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         databaseReferenceManual.push().setValue(title);
     }
 
-    void addRecordToFireBasePlaylist(String title, String artist, String playlist) {
-        DatabaseReference databaseReferencePlaylist = databaseReference.child("playlist");
-
+    private void addRecordPlaylist(String title, String artist, String playlist) {
         Song song = musicSrv.getSong(title, artist);
         if (song.getID() == -1) {
             return;
         }
 
         double[][] features = fex.extractFeatures(song);
+        addRecordToFireBasePlaylist(playlist, features, song);
+        addRecord(song, LIKE, playlistActivityCodes.get(selected_playlist), features);
+    }
+
+    void addRecordToFireBasePlaylist(String playlist,
+                                     double[][] features, Song song) {
+        DatabaseReference databaseReferencePlaylist = databaseReference.child("playlist");
+
         List<Double> feats = new ArrayList<>();
         if(features != null && features[0] != null && features[0].length > 0) {
             for(int i = 0; i < 8; i++) {
