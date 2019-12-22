@@ -1,7 +1,11 @@
 package com.fri.soundtrackforlife;
 
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
+import android.graphics.Color;
 import android.media.MediaPlayer;
 import android.os.AsyncTask;
 import android.os.Build;
@@ -17,6 +21,7 @@ import android.os.PowerManager;
 import android.util.Log;
 import android.app.Notification;
 import android.app.PendingIntent;
+import androidx.core.app.NotificationCompat;
 
 
 public class MusicService extends Service implements
@@ -73,20 +78,30 @@ public class MusicService extends Service implements
         PendingIntent pendInt = PendingIntent.getActivity(this, 0,
                 notIntent, PendingIntent.FLAG_UPDATE_CURRENT);
 
-        Notification.Builder builder = null;
-        if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
-            builder = new Notification.Builder(this);
-            builder.setContentIntent(pendInt)
-                    .setSmallIcon(R.drawable.play)
-                    .setTicker(songTitle)
-                    .setOngoing(true)
-                    .setContentTitle("Playing")
-            .setContentText(songTitle);
-            Notification not = builder.build();
+        startMyOwnForeground();
+    }
 
-            startForeground(NOTIFY_ID, not);
-        }
+    private void startMyOwnForeground(){
+        String NOTIFICATION_CHANNEL_ID = "com.fri.soundtrackforlife";
+        String channelName = "Music Player";
+        NotificationChannel chan = new NotificationChannel(NOTIFICATION_CHANNEL_ID, channelName, NotificationManager.IMPORTANCE_NONE);
+        chan.setLightColor(Color.BLUE);
+        chan.setLockscreenVisibility(Notification.VISIBILITY_PRIVATE);
+        NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        assert manager != null;
+        manager.createNotificationChannel(chan);
 
+        NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID);
+        Notification notification = notificationBuilder.setOngoing(true)
+                .setSmallIcon(R.drawable.play)
+                .setContentTitle("Playing")
+                .setPriority(NotificationManager.IMPORTANCE_MIN)
+                .setCategory(Notification.CATEGORY_SERVICE)
+                .setTicker(songTitle)
+                .setOngoing(true)
+                .setContentText(songTitle)
+                .build();
+        startForeground(2, notification);
     }
 
     public void initMusicPlayer(){
