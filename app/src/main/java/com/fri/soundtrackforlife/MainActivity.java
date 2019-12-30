@@ -75,7 +75,6 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     private Intent playIntent;
     private boolean musicBound=false;
     private MusicController controller;
-    //private boolean paused=false, playbackPaused=false;
     final int MY_PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE = 0;
     final int MY_REQUEST_PERMISSIONS_REQUEST_CODE = 2;
     private ActivityRecognitionClient activityRecognitionClient;
@@ -97,6 +96,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     private FeedbackDBreader feedbackDBreader;
     private MenuItem backButton;
     private String currentScreen;
+    private ArrayList<Song> recommendedSongList;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -109,16 +109,13 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         checkPermissions();
 
         feedbackDBreader = new FeedbackDBreader(this);
-        getSongList();
 
-        Collections.sort(songList, new Comparator<Song>(){
-            public int compare(Song a, Song b){
-                return a.getTitle().compareTo(b.getTitle());
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
+            if (songList.size() == 0) {
+                songListSetup();
+                AsyncTask.execute(() -> calculateSongFeatures());
             }
-        });
-
-        SongAdapter songAdt = new SongAdapter(this, songList);
-        songView.setAdapter(songAdt);
+        }
         setController();
 
         activityRecognitionClient = new ActivityRecognitionClient(this);
@@ -132,6 +129,17 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         currentScreen = "main";
 
         initializeActivityMap();
+    }
+
+    private void songListSetup() {
+        getSongList();
+        Collections.sort(songList, new Comparator<Song>() {
+            public int compare(Song a, Song b) {
+                return a.getTitle().compareTo(b.getTitle());
+            }
+        });
+        SongAdapter songAdt = new SongAdapter(this, songList);
+        songView.setAdapter(songAdt);
     }
 
     private void initializeActivityMap() {
@@ -178,6 +186,20 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     }
 
     @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        switch (requestCode) {
+            case MY_PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE: {
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    if (songList.size() == 0) {
+                        songListSetup();
+                        AsyncTask.execute(() -> calculateSongFeatures());
+                    }
+                }
+            }
+        }
+    }
+
+    @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
         backButton = menu.findItem(R.id.action_back);
         return super.onPrepareOptionsMenu(menu);
@@ -212,19 +234,9 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         }
     };
 
-    /*@Override
-    protected void onPause(){
-        super.onPause();
-        paused=true;
-    }*/
-
     @Override
     protected void onResume(){
         super.onResume();
-        /*if(paused){
-            setController();
-            paused=false;
-        }*/
         if (controller.isSongPlaying()) {
             setControllerAnchor();
             controller.show(0);
@@ -302,10 +314,6 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
 
             musicSrv.setSong(songPos);
             musicSrv.playSong();
-            /*if (playbackPaused) {
-                setController();
-                playbackPaused = false;
-            }*/
             setControllerAnchor();
             controller.setSongIsPlaying(true);
             controller.show(0);
@@ -430,7 +438,6 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
 
     @Override
     public void pause() {
-        //playbackPaused=true;
         musicSrv.pausePlayer();
     }
 
@@ -537,10 +544,6 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
             Log.d("implicit_feedback", "Exception while implicit feedback");
         }
         musicSrv.playNext();
-        /*if(playbackPaused){
-            setController();
-            playbackPaused=false;
-        }*/
         controller.show(0);
 
         incrementCounts();
@@ -548,10 +551,6 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
 
     private void playPrev(){
         musicSrv.playPrev();
-        /*if(playbackPaused){
-            setController();
-            playbackPaused=false;
-        }*/
         controller.show(0);
 
         incrementCounts();
@@ -918,5 +917,63 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
 
     public FeedbackDBreader getFeedbackDBreader() {
         return feedbackDBreader;
+    }
+
+    private void calculateSongFeatures() {
+        System.out.println("Feature calculation started.");
+        SQLiteDatabase db = feedbackDBreader.getWritableDatabase();
+        for (Song s : songList) {
+            try {
+                Cursor c = feedbackDBreader.retrieveExistingFeatures(s);
+                if (c.moveToNext()) {
+                    System.out.println(s.getTitle() + " already in database.");
+                    c.close();
+                    continue;
+                }
+                c.close();
+            }
+            catch (Exception e) {
+                e.printStackTrace();
+            }
+            double[][] features = fex.extractFeatures(s);
+            ContentValues values = new ContentValues();
+            values.put("songtitle", s.getTitle());
+            if(features != null && features[0] != null && features[0].length > 0) {
+                for(int i = 0; i < 8; i++) {
+                    values.put("feature" + (i + 1), features[i][0]);
+                }
+                db.insert("features", null, values);
+                System.out.println(s.getTitle() + " features calculated.");
+            }
+        }
+        db.close();
+        System.out.println("Feature calculation completed.");
+    }
+
+    private ArrayList<Song> getRecommendedSongList(double[] features) {
+        recommendedSongList = new ArrayList<>();
+        Cursor c = feedbackDBreader.getSongsWithFeatures();
+        double score;
+        Song song;
+
+        while (c.moveToNext()) {
+            score = 0;
+            for (int i = 0; i < 8; i++) {
+                score += Math.abs(features[i] - c.getDouble(i + 2)) / features[i];
+            }
+            // TODO: if score higher than some threshold, do not add to list
+            song = musicSrv.getSongByTitle(c.getString(1));
+            song.setScore(score);
+            recommendedSongList.add(song);
+        }
+
+        c.close();
+        Collections.sort(recommendedSongList, new Comparator<Song>(){
+            public int compare(Song a, Song b){
+                return Double.compare(a.getScore(), b.getScore());
+            }
+        });
+
+        return recommendedSongList;
     }
 }

@@ -87,7 +87,7 @@ public class FeatureExtractor {
         try {
 
             double[][] existingFeedback = reuseExistingFeedback(s);
-            if (existingFeedback != null) {
+            if (existingFeedback != null && existingFeedback[0] != null && existingFeedback[0].length > 0) {
                 return existingFeedback;
             }
 
@@ -119,6 +119,16 @@ public class FeatureExtractor {
         if(c.moveToNext()) {
             for (int i = 0; i < 8; i++) {
                 ret[i][0] = c.getDouble(i + 5);
+            }
+            c.close();
+            return ret;
+        }
+        c.close();
+        // try features table
+        c = ma.getFeedbackDBreader().retrieveExistingFeatures(s);
+        if(c.moveToNext()) {
+            for (int i = 0; i < 8; i++) {
+                ret[i][0] = c.getDouble(i + 2);
             }
             c.close();
             return ret;

@@ -9,6 +9,7 @@ public class Song {
     private String artist;
     private String relativePath;
     private Map<Integer, Integer> counts;
+    private double score;
 
     public Song(long songID, String songTitle, String songArtist, String songRelativePath) {
         id=songID;
@@ -16,6 +17,7 @@ public class Song {
         artist=songArtist;
         relativePath = songRelativePath;
         counts = initCounts();
+        score = 0;
     }
 
     private Map<Integer, Integer> initCounts() {
@@ -34,5 +36,13 @@ public class Song {
     public String getRelativePath() {return relativePath;}
     Map<Integer, Integer> getCounts() {
         return counts;
+    }
+
+    public void setScore(double s) {
+        score = s;
+    }
+
+    public double getScore() {
+        return score;
     }
 }

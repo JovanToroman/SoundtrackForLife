@@ -23,6 +23,7 @@ public class FeedbackDBreader extends SQLiteOpenHelper {
     public static final String DATABASE_NAME = "SoundtrackForLife";
     public static final String FEEDBACK_TABLE_NAME = "feedback";
     public static final String PLAY_TABLE_NAME = "play";
+    public static final String FEATURES_TABLE_NAME = "features";
     public static final Integer SONG_TITLE_COLUMN_ID = 1;
     public static final Integer ACTIVITY_COLUMN_ID = 2;
     public static final Integer COUNT_COLUMN_ID = 3;
@@ -55,6 +56,20 @@ public class FeedbackDBreader extends SQLiteOpenHelper {
                 + "count integer not null,"
                 + "created DATETIME DEFAULT CURRENT_TIMESTAMP"
                 +");");
+
+        db.execSQL("create table IF NOT EXISTS "+ FEATURES_TABLE_NAME + " (_id integer primary key autoincrement, "
+                + "songtitle text not null,"
+                + "feature1 float,"
+                + "feature2 float,"
+                + "feature3 float,"
+                + "feature4 float,"
+                + "feature5 float,"
+                + "feature6 float,"
+                + "feature7 float,"
+                + "feature8 float,"
+                + "created DATETIME DEFAULT CURRENT_TIMESTAMP"
+                +");");
+
         db.close();
     }
 
@@ -146,7 +161,19 @@ public class FeedbackDBreader extends SQLiteOpenHelper {
                 + " WHERE songtitle='" + s.getTitle() + "' AND feature1 IS NOT NULL", null);
     }
 
+    public Cursor retrieveExistingFeatures(Song s) {
+        SQLiteDatabase db = context.openOrCreateDatabase(DATABASE_NAME, Context.MODE_PRIVATE, null);
+        return db.rawQuery("SELECT * FROM " + FEATURES_TABLE_NAME
+                + " WHERE songtitle='" + s.getTitle() + "' AND feature1 IS NOT NULL", null);
+    }
+
     public void displayMessage(String mess) {
         Snackbar.make(context.findViewById(R.id.coordinatorLayout), mess, Snackbar.LENGTH_LONG).show();
+    }
+
+    public Cursor getSongsWithFeatures() {
+        SQLiteDatabase db = context.openOrCreateDatabase(DATABASE_NAME, Context.MODE_PRIVATE, null);
+        return db.rawQuery("SELECT * FROM " + FEATURES_TABLE_NAME
+                + " WHERE feature1 IS NOT NULL", null);
     }
 }
