@@ -15,3 +15,5 @@
 .cxx
 /app/libs/.idea
 /.idea/inspectionProfiles
+/ml/.idea
+/ml/venv
