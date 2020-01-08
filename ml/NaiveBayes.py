@@ -4,6 +4,7 @@ from sklearn.naive_bayes import GaussianNB
 from sklearn.model_selection import train_test_split
 from sklearn import metrics
 import random
+from sklearn.neural_network import  MLPClassifier
 
 
 with open('soundtrack-for-life-songs-export.json', 'r', encoding='UTF-8') as myfile:
@@ -45,3 +46,5 @@ gnb.fit(X_train, y_train)
 y_pred = gnb.predict(X_test)
 
 print("Accuracy:",metrics.accuracy_score(y_test, y_pred))
+print("\nPrecission:",metrics.precision_score(y_test, y_pred))
+print("\nRecall:",metrics.recall_score(y_test, y_pred))
