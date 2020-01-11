@@ -39,6 +39,7 @@ dependencies {
     implementation files('libs\\jl1.0.1.jar')
     implementation 'com.google.firebase:firebase-database:19.2.0'
     implementation 'com.squareup.okhttp3:okhttp:3.10.0'
+    implementation 'com.github.ptnplanet:Java-Naive-Bayes-Classifier:3f8d874c98baacbd3f4accae71e7179ab426dfe2'
 }
 
 apply plugin: 'com.google.gms.google-services'
