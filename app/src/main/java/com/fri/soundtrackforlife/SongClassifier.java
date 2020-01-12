@@ -10,9 +10,12 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -26,13 +29,16 @@ class SongClassifier {
 
     private static Map<String, Double> activities;
     private Classifier<Double, Boolean> bayes;
+    JSONObject dbUnique;
 
 
     SongClassifier(Context c) throws IOException, JSONException {
 
+        dbUnique = new JSONObject(readJsonString(c, "unique_db.json"));
+
         initializeActivityMap();
 
-        String jsonString = readJsonString(c);
+        String jsonString = readJsonString(c, "model_data.json");
         JSONObject jsonObject = new JSONObject(jsonString);
         Iterator<String> feedbackKeys = jsonObject.getJSONObject("feedback").keys();
         Iterator<String> playlistKeys = jsonObject.getJSONObject("playlist").keys();
@@ -75,9 +81,9 @@ class SongClassifier {
         return bayes.classify(predictionFeatures).getCategory();
     }
 
-    private String readJsonString(Context c) throws IOException {
+    private String readJsonString(Context c, String fileName) throws IOException {
         AssetManager am = c.getApplicationContext().getAssets();
-        InputStream inputStream = am.open("model_data.json");
+        InputStream inputStream = am.open(fileName);
         BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
         String line = reader.readLine();
         StringBuilder sb = new StringBuilder();
@@ -162,5 +168,20 @@ class SongClassifier {
         activities.put("UNKNOWN", (double) DetectedActivity.UNKNOWN);
         activities.put("TILTING", (double) DetectedActivity.TILTING);
         activities.put("STILL", (double) DetectedActivity.STILL);
+    }
+
+    public double[][] getExistingFeatures(String title) {
+        double[][] feats = new double[8][1];
+        try {
+            String[] vals = dbUnique.get(title).toString().replace("[", "").replace("]", "").split(",");
+            for (int i = 0; i < 8; i++) {
+                feats[i][0] = Double.valueOf(vals[i]);
+            }
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return feats;
     }
 }

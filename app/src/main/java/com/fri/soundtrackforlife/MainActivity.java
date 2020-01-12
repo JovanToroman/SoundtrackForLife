@@ -1,10 +1,12 @@
 package com.fri.soundtrackforlife;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
@@ -54,6 +56,9 @@ import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.textfield.TextInputEditText;
+import com.google.firebase.database.ChildEventListener;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 
@@ -61,6 +66,8 @@ import android.widget.MediaController.MediaPlayerControl;
 
 import android.os.Bundle;
 import android.widget.TextView;
+
+import org.json.JSONException;
 
 public class MainActivity extends AppCompatActivity implements MediaPlayerControl {
     
@@ -97,6 +104,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     private MenuItem backButton;
     private String currentScreen;
     private ArrayList<Song> recommendedSongList;
+    SongClassifier songClassifier;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -109,6 +117,12 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         checkPermissions();
 
         feedbackDBreader = new FeedbackDBreader(this);
+
+        try {
+            songClassifier = new SongClassifier(this);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
             if (songList.size() == 0) {
@@ -935,7 +949,16 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
             catch (Exception e) {
                 e.printStackTrace();
             }
-            double[][] features = fex.extractFeatures(s);
+
+            double[][] features = songClassifier.getExistingFeatures(s.getTitle());
+            if (features[0][0] == 0.0) {
+                System.out.println(s.getTitle() + " no entry in unique_db.json!");
+                features = fex.extractFeatures(s);
+            }
+            else {
+                System.out.println(s.getTitle() + " successfully got features from unique_db.json!");
+            }
+
             ContentValues values = new ContentValues();
             values.put("songtitle", s.getTitle());
             if(features != null && features[0] != null && features[0].length > 0) {
@@ -944,6 +967,9 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
                 }
                 db.insert("features", null, values);
                 System.out.println(s.getTitle() + " features calculated.");
+            }
+            else {
+                System.out.println(s.getTitle() + " features null!");
             }
         }
         db.close();

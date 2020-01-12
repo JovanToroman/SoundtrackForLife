@@ -156,15 +156,17 @@ public class FeedbackDBreader extends SQLiteOpenHelper {
     }
 
     public Cursor retrieveExistingFeedback(Song s) {
+        String dbTitle = sqlify(s.getTitle());
         SQLiteDatabase db = context.openOrCreateDatabase(DATABASE_NAME, Context.MODE_PRIVATE, null);
         return db.rawQuery("SELECT * FROM " + FEEDBACK_TABLE_NAME
-                + " WHERE songtitle='" + s.getTitle() + "' AND feature1 IS NOT NULL", null);
+                + " WHERE songtitle='" + dbTitle + "' AND feature1 IS NOT NULL", null);
     }
 
     public Cursor retrieveExistingFeatures(Song s) {
+        String dbTitle = sqlify(s.getTitle());
         SQLiteDatabase db = context.openOrCreateDatabase(DATABASE_NAME, Context.MODE_PRIVATE, null);
         return db.rawQuery("SELECT * FROM " + FEATURES_TABLE_NAME
-                + " WHERE songtitle='" + s.getTitle() + "' AND feature1 IS NOT NULL", null);
+                + " WHERE songtitle='" + dbTitle + "' AND feature1 IS NOT NULL", null);
     }
 
     public void displayMessage(String mess) {

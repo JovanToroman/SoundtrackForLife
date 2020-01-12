@@ -11,6 +11,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -80,6 +82,9 @@ public class FeatureExtractor {
      */
     public double[][] extractFeatures(Song s) {
 
+        SimpleDateFormat formatter = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
+        System.out.println("start " + formatter.format(new Date()));
+
         Utils.verifyStoragePermissions(ma);
 
         Batch batch = null;
@@ -109,6 +114,8 @@ public class FeatureExtractor {
         //get results
         double[][] results = extractResults(batch);
         System.out.println("done");
+
+        System.out.println("end " + formatter.format(new Date()));
 
         return results;
     }
@@ -152,7 +159,7 @@ public class FeatureExtractor {
         InputStream fis = new FileInputStream(f);
         OutputStream o = new FileOutputStream(STORAGE_EMULATED_0_DOWNLOAD + "temp_out");
         int size = fis.available();
-        for(int i = size / 2; i < 6 * size / 10; i++) {
+        for(int i = size / 2; i < 61 * size / 120; i++) {  // i < 6 * size / 10
             o.write(fis.read());
         }
 
