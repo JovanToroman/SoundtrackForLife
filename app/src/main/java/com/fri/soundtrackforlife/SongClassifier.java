@@ -45,6 +45,8 @@ class SongClassifier {
 
         List<List<Double>> dataLike = new ArrayList<>();
         List<List<Double>> dataDislike = new ArrayList<>();
+        addValues(feedbackKeys, jsonObject, dataLike, dataDislike, "feedback");
+        addValues(playlistKeys, jsonObject, dataLike, dataDislike, "playlist");
 
         bayes = new BayesClassifier<>();
 
@@ -55,8 +57,6 @@ class SongClassifier {
             bayes.learn(false, d);
         }
 
-        addValues(feedbackKeys, jsonObject, dataLike, dataDislike, "feedback");
-        addValues(playlistKeys, jsonObject, dataLike, dataDislike, "playlist");
 
         // to evaluate model. Accuracy approximately 64%
 //        System.out.println(evaluateModel(dataLike, dataDislike, bayes));
@@ -173,6 +173,7 @@ class SongClassifier {
     public double[][] getExistingFeatures(String title) {
         double[][] feats = new double[8][1];
         try {
+            //dbUnique.has("sadsadsd");
             String[] vals = dbUnique.get(title).toString().replace("[", "").replace("]", "").split(",");
             for (int i = 0; i < 8; i++) {
                 feats[i][0] = Double.valueOf(vals[i]);
