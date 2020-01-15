@@ -14,20 +14,6 @@
     tools:context=".MainActivity"
     android:id="@+id/song_view">
 
-        <Button
-            android:id="@+id/button4"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:onClick="goToPlaylistMaker"
-            android:text="Make playlists" />
-
-        <Button
-            android:id="@+id/send_feedback"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:onClick="sendFeedback"
-            android:text="Send feedback" />
-
         <ListView
             android:id="@+id/song_list"
             android:layout_width="fill_parent"

@@ -11,13 +11,6 @@
         app:showAsAction="always" />
 
     <item
-        android:id="@+id/action_shuffle"
-        android:icon="@drawable/rand"
-        android:orderInCategory="1"
-        android:title="Shuffle"
-        app:showAsAction="always" />
-
-    <item
         android:id="@+id/action_end"
         android:icon="@drawable/end"
         android:color="#030303"

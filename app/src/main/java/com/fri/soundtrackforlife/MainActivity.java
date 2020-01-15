@@ -294,45 +294,14 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         }
 
         updateCounts();
+        int songPos = Integer.parseInt(view.getTag().toString());
 
-        if (view.getParent() == findViewById(R.id.song_search)) {
-            Set<String> set = new HashSet<String> (getSharedPreferences("prefs", Context.MODE_PRIVATE).
-                    getStringSet(selected_playlist, new HashSet<String>()));
-            if (!set.contains(((TextView)((LinearLayout) view).getChildAt(0)).getText() + "|" +
-                    ((TextView)((LinearLayout) view).getChildAt(1)).getText())) {
-                set.add(((TextView)((LinearLayout) view).getChildAt(0)).getText() + "|" +
-                        ((TextView)((LinearLayout) view).getChildAt(1)).getText());
-                getSharedPreferences("prefs", Context.MODE_PRIVATE).
-                        edit().
-                        putStringSet(selected_playlist, set).
-                        apply();
-            }
-            AsyncTask.execute(() -> addRecordPlaylist(
-                    ((TextView)((LinearLayout) view).getChildAt(0)).getText().toString(),
-                    ((TextView)((LinearLayout) view).getChildAt(1)).getText().toString(),
-                    selected_playlist));
-            setupPlaylistView();
-            if (controller.isSongPlaying()) {
-                setControllerAnchor();
-                controller.show(0);
-            }
-            currentScreen = "playlist";
-        }
-        else {
-            int songPos = Integer.parseInt(view.getTag().toString());
-            if (view.getParent() == findViewById(R.id.song_playlist)) {
-                songPos = musicSrv.getSongPosn(
-                        ((TextView)((LinearLayout) view).getChildAt(0)).getText().toString(),
-                        ((TextView)((LinearLayout) view).getChildAt(1)).getText().toString());
-            }
-
-            musicSrv.setSong(songPos);
-            musicSrv.playSong();
-            setControllerAnchor();
-            controller.setSongIsPlaying(true);
-            controller.show(0);
-            incrementCounts();
-        }
+        musicSrv.setSong(songPos);
+        musicSrv.playSong();
+        setControllerAnchor();
+        controller.setSongIsPlaying(true);
+        controller.show(0);
+        incrementCounts();
     }
 
     private void updateCounts() {
@@ -365,10 +334,6 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
             musicSrv.setMainActivity(this);
         }
         switch (item.getItemId()) {
-            case R.id.action_shuffle:
-                boolean shuffle = musicSrv.setShuffle();
-                displayMessage("Shuffle " + (shuffle ? "On" : "Off"));
-                break;
             case R.id.action_end:
                 stopService(playIntent);
                 musicSrv=null;
@@ -383,31 +348,6 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
             case R.id.action_like:
                 AsyncTask.execute(() -> addRecordWithFeatures(musicSrv.getCurrentSongData(), LIKE));
                 displayMessage("You liked " + musicSrv.getCurrentSongData().getTitle());
-                break;
-            case R.id.action_back:
-                if (currentScreen == "playlist") {
-                    // go to playlist maker
-                    currentScreen = "playlistMaker";
-                    setContentView(R.layout.playlist_maker);
-                }
-                else if (currentScreen == "songFinder") {
-                    // go to playlist
-                    currentScreen = "playlist";
-                    setupPlaylistView();
-                    if (controller.isSongPlaying()) {
-                        setControllerAnchor();
-                        controller.show(0);
-                    }
-                }
-                else {
-                    // go to main
-                    currentScreen = "main";
-                    backButton.setVisible(false);
-                    setContentView(R.layout.activity_main);
-                    songView = findViewById(R.id.song_list);
-                    SongAdapter songAdt = new SongAdapter(this, songList);
-                    songView.setAdapter(songAdt);
-                }
                 break;
         }
         return super.onOptionsItemSelected(item);
@@ -539,12 +479,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     }
 
     private void setControllerAnchor() {
-        if (currentScreen == "main") {
-            controller.setAnchorView(findViewById(R.id.song_view));
-        }
-        else {
-            controller.setAnchorView(findViewById(R.id.playlist_view));
-        }
+        controller.setAnchorView(findViewById(R.id.song_view));
     }
 
     private void playNext(){
@@ -608,183 +543,6 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         int defaultValue = -1;
 
         return getSharedPreferences("prefs", Context.MODE_PRIVATE).getInt("activity", defaultValue);
-    }
-
-    public void goToPlaylistMaker(View view) {
-        setContentView(R.layout.playlist_maker);
-        currentScreen = "playlistMaker";
-        backButton.setVisible(true);
-    }
-
-    public void goToPlaylist(View view) {
-        switch (view.getId()) {
-            case R.id.in_vehicle:
-                selected_playlist = "in_vehicle";
-                activityStr = "add song to 'on a bus/in a car'";
-                break;
-            case R.id.on_bicycle:
-                selected_playlist = "on_bicycle";
-                activityStr = "add song to 'riding a bike'";
-                break;
-            case R.id.walking:
-                selected_playlist = "walking";
-                activityStr = "add song to 'walking'";
-                break;
-            case R.id.running:
-                selected_playlist = "running";
-                activityStr = "add song to 'running'";
-                break;
-            case R.id.still:
-                selected_playlist = "still";
-                activityStr = "add song to 'sitting/standing'";
-                break;
-        }
-
-        currentScreen = "playlist";
-        setupPlaylistView();
-    }
-
-    void setupPlaylistView() {
-        setContentView(R.layout.playlist);
-        Button btn = findViewById(R.id.add_song_button);
-        btn.setText(activityStr);
-        songPlaylistView = findViewById(R.id.song_playlist);
-        songPlaylist = new ArrayList<>();
-
-        Set<String> set = getSharedPreferences("prefs", Context.MODE_PRIVATE).
-                getStringSet(selected_playlist, new HashSet<String>());
-
-        for (String song : set) {
-            songPlaylist.add(new Song(
-                    musicSrv.getSongID(song.substring(0, song.indexOf('|')), song.substring(song.indexOf('|') + 1)),
-                    song.substring(0, song.indexOf('|')),
-                    song.substring(song.indexOf('|') + 1),
-                    musicSrv.getSongPath(song.substring(0, song.indexOf('|')), song.substring(song.indexOf('|') + 1))));
-        }
-
-        Collections.sort(songPlaylist, new Comparator<Song>(){
-            public int compare(Song a, Song b){
-                return a.getTitle().compareTo(b.getTitle());
-            }
-        });
-
-        SongAdapter songAdt = new SongAdapter(this, songPlaylist);
-        songPlaylistView.setAdapter(songAdt);
-    }
-
-    public void goToSongFinder(View view) {
-        setContentView(R.layout.song_finder);
-        songSearchListView = findViewById(R.id.song_search);
-        songSearchList = getRefreshedSearchList("");
-        songSearchAdapter = new SongAdapter(this, songSearchList);
-        songSearchListView.setAdapter(songSearchAdapter);
-        currentScreen = "songFinder";
-
-        if (controller.isSongPlaying()) {
-            controller.hideCustom();
-        }
-
-        searchInput = findViewById(R.id.search_input);
-        searchInput.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {}
-
-            @Override
-            public void afterTextChanged(Editable s) {
-                songSearchList = getRefreshedSearchList(s.toString());
-                songSearchAdapter.setSongs(songSearchList);
-                TextView txt = findViewById(R.id.no_songs_found_text);
-                Button btn = findViewById(R.id.add_search_song);
-                if (songSearchList.size() > 0) {
-                    txt.setVisibility(TextView.GONE);
-                    btn.setVisibility(TextView.GONE);
-                }
-                else {
-                    txt.setVisibility(TextView.VISIBLE);
-                    btn.setText("add " + s.toString());
-                    btn.setVisibility(TextView.VISIBLE);
-                }
-                findViewById(R.id.song_search).invalidate();
-            }
-        });
-    }
-
-    public ArrayList getRefreshedSearchList(String searchStr) {
-        ArrayList<Song> arrayList = new ArrayList<>();
-
-        //retrieve song info
-        ContentResolver musicResolver = getContentResolver();
-        Uri musicUri = android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
-        Cursor musicCursor = musicResolver.query(musicUri, null, null, null, null);
-
-        if(musicCursor!=null && musicCursor.moveToFirst()){
-            //get columns
-            int titleColumn = musicCursor.getColumnIndex(MediaStore.Audio.Media.TITLE);
-            int relativePath = musicCursor.getColumnIndex(MediaStore.Audio.Media.DATA);
-            int idColumn = musicCursor.getColumnIndex(MediaStore.Audio.Media._ID);
-            int artistColumn = musicCursor.getColumnIndex(MediaStore.Audio.Media.ARTIST);
-
-            Set<String> set = new HashSet<String> (getSharedPreferences("prefs", Context.MODE_PRIVATE).
-                    getStringSet(selected_playlist, new HashSet<String>()));
-
-            //add songs to list
-            do {
-                long thisId = musicCursor.getLong(idColumn);
-                String thisTitle = musicCursor.getString(titleColumn);
-                String thisArtist = musicCursor.getString(artistColumn);
-                String thisRelativePath = musicCursor.getString(relativePath);
-
-                if (!set.contains(thisTitle + "|" + thisArtist)) {
-                    if (searchStr.length() == 0) {
-                        arrayList.add(new Song(thisId, thisTitle, thisArtist, thisRelativePath));
-                        continue;
-                    }
-
-                    if (searchStr.length() > 2) {
-                        if (thisTitle.toLowerCase().contains(searchStr.toLowerCase())) {
-                            arrayList.add(new Song(thisId, thisTitle, thisArtist, thisRelativePath));
-                            continue;
-                        }
-                    }
-
-                    if (thisTitle.toLowerCase().startsWith(searchStr.toLowerCase())) {
-                        arrayList.add(new Song(thisId, thisTitle, thisArtist, thisRelativePath));
-                    }
-                }
-            }
-            while (musicCursor.moveToNext());
-        }
-
-        Collections.sort(arrayList, new Comparator<Song>(){
-            public int compare(Song a, Song b){
-                return a.getTitle().compareTo(b.getTitle());
-            }
-        });
-
-        return arrayList;
-    }
-
-    public void saveSongAsString(View view) {
-        String songStr = ((Button) view).getText().toString().substring(3);
-        Set<String> set = new HashSet<String> (getSharedPreferences("prefs", Context.MODE_PRIVATE).
-                getStringSet(selected_playlist + "_manual", new HashSet<String>()));
-        if (!set.contains(songStr)) {
-            set.add(songStr);
-            getSharedPreferences("prefs", Context.MODE_PRIVATE).
-                    edit().
-                    putStringSet(selected_playlist + "_manual", set).
-                    apply();
-        }
-        addRecordToFirebaseManual(songStr);
-        setupPlaylistView();
-        if (controller.isSongPlaying()) {
-            setControllerAnchor();
-            controller.show(0);
-        }
-        currentScreen = "playlist";
     }
 
     String getHour() {
@@ -854,17 +612,6 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         ));
     }
 
-    private void addRecordPlaylist(String title, String artist, String playlist) {
-        Song song = musicSrv.getSong(title, artist);
-        if (song.getID() == -1) {
-            return;
-        }
-
-        double[][] features = fex.extractFeatures(song);
-        addRecordToFireBasePlaylist(playlist, features, song);
-        addRecord(song, LIKE, playlistActivityCodes.get(selected_playlist), features);
-    }
-
     void addRecordToFireBasePlaylist(String playlist,
                                      double[][] features, Song song) {
         DatabaseReference databaseReferencePlaylist = databaseReference.child("playlist");
@@ -918,15 +665,6 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
                 song.getTitle(), song.getArtist(), feedbackString, getActivityString(activityType),
                 location, time, feats, id
         ));
-    }
-
-    public void sendFeedback(View view) {
-        try {
-            feedbackDBreader.sendFeedback();
-            findViewById(R.id.send_feedback).setVisibility(View.GONE);
-        } catch (Exception e) {
-            Log.d("feedback", "Failed to send feedback");
-        }
     }
 
     public FeedbackDBreader getFeedbackDBreader() {
