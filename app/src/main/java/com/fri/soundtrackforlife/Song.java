@@ -10,6 +10,7 @@ public class Song {
     private String relativePath;
     private Map<Integer, Integer> counts;
     private double score;
+    private double[][] features;
 
     public Song(long songID, String songTitle, String songArtist, String songRelativePath) {
         id=songID;
@@ -44,5 +45,13 @@ public class Song {
 
     public double getScore() {
         return score;
+    }
+
+    public double[][] getFeatures() {
+        return features;
+    }
+
+    public void setFeatures(double[][] features) {
+        this.features = features;
     }
 }

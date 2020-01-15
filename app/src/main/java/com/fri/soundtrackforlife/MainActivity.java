@@ -239,6 +239,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
             musicSrv = binder.getService();
             //pass list
             musicSrv.setList(songList);
+            musicSrv.setSongPlaylist(generatePlaylists());
             musicBound = true;
         }
 
@@ -247,6 +248,21 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
             musicBound = false;
         }
     };
+
+    private Map<Integer, List<Song>> generatePlaylists() {
+        Map<Integer, List<Song>> ret = new HashMap<>();
+        for (String activity : SongClassifier.activities.keySet()) {
+            List<Song> good = new ArrayList<>();
+            int detectedActivity = SongClassifier.activities.get(activity).intValue();
+            for (Song s : songList){
+                if (songClassifier.predictSongLiking(detectedActivity, s.getFeatures())) {
+                    good.add(s);
+                }
+            }
+            ret.put(detectedActivity, good);
+        }
+        return ret;
+    }
 
     @Override
     protected void onResume(){
@@ -709,6 +725,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
             else {
                 System.out.println(s.getTitle() + " features null!");
             }
+            s.setFeatures(features);
         }
         db.close();
         System.out.println("Feature calculation completed.");

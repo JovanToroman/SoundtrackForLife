@@ -7,6 +7,8 @@ import android.os.AsyncTask;
 import android.os.Build;
 import android.os.IBinder;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 import android.content.ContentUris;
@@ -27,7 +29,8 @@ public class MusicService extends Service implements
     private MediaPlayer player;
     private MainActivity mainActivity;
     //song list
-    private ArrayList<Song> songs;
+    private List<Song> songs;
+    private Map<Integer, List<Song>> songPlaylists;
     private String songTitle="";
     private static final int NOTIFY_ID=1;
 
@@ -36,7 +39,6 @@ public class MusicService extends Service implements
     private int prevSongPosn;
     private final IBinder musicBind = new MusicBinder();
 
-    private boolean shuffle=true;
     private Random rand;
 
     @Override
@@ -98,8 +100,12 @@ public class MusicService extends Service implements
         player.setOnErrorListener(this);
     }
 
-    public void setList(ArrayList<Song> theSongs){
+    public void setList(List<Song> theSongs){
         songs=theSongs;
+    }
+
+    public void setSongPlaylist(Map<Integer,List<Song>> theSongs){
+        songPlaylists=theSongs;
     }
 
     public void playSong(){
@@ -159,16 +165,6 @@ public class MusicService extends Service implements
         }
     }
 
-    public boolean setShuffle(){
-        if(shuffle) {
-            shuffle=false;
-        }
-        else {
-            shuffle=true;
-        }
-        return shuffle;
-    }
-
     public int getPosn() {
         return player.getCurrentPosition();
     }
@@ -208,30 +204,25 @@ public class MusicService extends Service implements
 
     public void playNext(){
         prevSongPosn = songPosn;
-        songPosn = resolveNextSong(shuffle);
+        songPosn = resolveNextSong();
         playSong();
     }
 
-    private int resolveNextSong(boolean random){
+    private int resolveNextSong(){
         int activityId = mainActivity.getCurrentActivity();
+        List<Song> currentActivityPlaylist = songPlaylists.get(activityId);
 
         int minCount = Integer.MAX_VALUE;
-        for (Song s : songs) {
+        for (Song s : currentActivityPlaylist) {
             if (s.getCounts().get(activityId) < minCount) {
                 minCount = s.getCounts().get(activityId);
             }
         }
         int newSong = songPosn;
 
-        if (random) {
-            while (newSong == songPosn || songs.get(newSong).getCounts().get(activityId) != minCount) {
-                newSong = rand.nextInt(songs.size());
-            }
-        } else {
-            newSong++;
-            if(newSong >= songs.size()) {
-                newSong = 0;
-            }
+        while (newSong == songPosn || currentActivityPlaylist.get(newSong).getCounts().get(activityId) != minCount) {
+            Song temp = currentActivityPlaylist.get(rand.nextInt(currentActivityPlaylist.size()));
+            newSong = getSongPosn(temp.getTitle(), temp.getArtist());
         }
         return newSong;
     }

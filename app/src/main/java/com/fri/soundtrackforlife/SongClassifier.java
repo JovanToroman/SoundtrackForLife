@@ -10,12 +10,9 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -27,7 +24,7 @@ import de.daslaboratorium.machinelearning.classifier.bayes.BayesClassifier;
 
 class SongClassifier {
 
-    private static Map<String, Double> activities;
+    static Map<String, Double> activities;
     private Classifier<Double, Boolean> bayes;
     JSONObject dbUnique;
 
