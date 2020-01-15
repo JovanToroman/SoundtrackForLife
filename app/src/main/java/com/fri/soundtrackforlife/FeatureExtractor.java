@@ -96,16 +96,17 @@ public class FeatureExtractor {
                 return existingFeedback;
             }
 
-            batch = createBatch();
+            if (isFileExtensionSupported(s.getRelativePath())) {
+                batch = createBatch();
+                setupDataModel(batch);
 
-            setupDataModel(batch);
+                File inputFile = conjureInputFile(s.getRelativePath());
 
-            File inputFile = conjureInputFile(s.getRelativePath());
+                batch.setRecordings(new File[]{inputFile});
+                batch.execute();
 
-            batch.setRecordings(new File[]{inputFile});
-            batch.execute();
-
-            inputFile.delete();
+                inputFile.delete();
+            }
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -163,7 +164,7 @@ public class FeatureExtractor {
             o.write(fis.read());
         }
 
-        // convert small piece of a song to .wav format whcih we can process (we can also process
+        // convert small piece of a song to .wav format which we can process (we can also process
         // .aiff, but decided to implement on .wav since it is detected by out music player
         Converter c = new Converter();
         c.convert(STORAGE_EMULATED_0_DOWNLOAD + "temp_out", STORAGE_EMULATED_0_DOWNLOAD + "temp_proc.wav");
@@ -262,5 +263,19 @@ public class FeatureExtractor {
         dm.featureValue = valsavepath;
     }
 
+    private boolean isFileExtensionSupported(String fileName) {
+        String[] unsupportedExtensions = {"wma", "flac"};
+        String extension = "";
+        int idx = fileName.lastIndexOf('.');
+        if (idx > 0) {
+            extension = fileName.substring(idx+1);
+        }
+        for (int i=0; i < unsupportedExtensions.length; i++) {
+            if (extension.equals(unsupportedExtensions[i])) {
+                return false;
+            }
+        }
 
+        return true;
+    }
 }

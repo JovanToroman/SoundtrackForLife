@@ -173,10 +173,11 @@ class SongClassifier {
     public double[][] getExistingFeatures(String title) {
         double[][] feats = new double[8][1];
         try {
-            //dbUnique.has("sadsadsd");
-            String[] vals = dbUnique.get(title).toString().replace("[", "").replace("]", "").split(",");
-            for (int i = 0; i < 8; i++) {
-                feats[i][0] = Double.valueOf(vals[i]);
+            if (dbUnique.has(title)) {
+                String[] vals = dbUnique.get(title).toString().replace("[", "").replace("]", "").split(",");
+                for (int i = 0; i < 8; i++) {
+                    feats[i][0] = Double.valueOf(vals[i]);
+                }
             }
         }
         catch (Exception e) {
