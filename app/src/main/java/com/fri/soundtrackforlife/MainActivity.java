@@ -383,6 +383,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
             int activity = getCurrentActivity();
             long id = addRecord(song, feedback, activity, features);
             addRecordToFirebase(song, feedback, activity, features, id);
+            songClassifier.addEntryToJSON(features, feedback, song.getTitle(), song.getArtist(), getActivityString(activity));
         }
     }
 

@@ -10,10 +10,12 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -22,28 +24,37 @@ import java.util.Map;
 import de.daslaboratorium.machinelearning.classifier.Classifier;
 import de.daslaboratorium.machinelearning.classifier.bayes.BayesClassifier;
 
+import static com.fri.soundtrackforlife.MainActivity.DISLIKE;
+
 class SongClassifier {
 
     static Map<String, Double> activities;
     private Classifier<Double, Boolean> bayes;
     JSONObject dbUnique;
+    JSONObject personalizedData;
+    Context context;
 
 
     SongClassifier(Context c) throws IOException, JSONException {
 
+        context = c;
         dbUnique = new JSONObject(readJsonString(c, "unique_db.json"));
 
         initializeActivityMap();
 
         String jsonString = readJsonString(c, "model_data.json");
         JSONObject jsonObject = new JSONObject(jsonString);
+        String jsonStringPersonalized = readJsonString(c, "personalized_data.json");
+        personalizedData = new JSONObject(jsonStringPersonalized);
         Iterator<String> feedbackKeys = jsonObject.getJSONObject("feedback").keys();
         Iterator<String> playlistKeys = jsonObject.getJSONObject("playlist").keys();
+        Iterator<String> personalizedKeys = jsonObject.getJSONObject("feedback").keys();
 
         List<List<Double>> dataLike = new ArrayList<>();
         List<List<Double>> dataDislike = new ArrayList<>();
         addValues(feedbackKeys, jsonObject, dataLike, dataDislike, "feedback");
         addValues(playlistKeys, jsonObject, dataLike, dataDislike, "playlist");
+        addValues(personalizedKeys, jsonObject, dataLike, dataDislike, "feedback");
 
         bayes = new BayesClassifier<>();
 
@@ -182,5 +193,32 @@ class SongClassifier {
         }
 
         return feats;
+    }
+
+    public void addEntryToJSON(double[][] features, int feedback, String title, String artist, String activity) {
+        try {
+            JSONObject jsonObj = new JSONObject();
+            String feedbackString = "";
+            if (feedback == DISLIKE) {
+                feedbackString = "dislike";
+            } else {
+                feedbackString = "like";
+            }
+            jsonObj.put("features", features);
+            jsonObj.put("feedback", feedbackString);
+            jsonObj.put("title", title);
+            jsonObj.put("artist", artist);
+            jsonObj.put("activity", activity);
+
+            ((JSONObject) personalizedData.get("feedback")).put(String.valueOf(new Date().getTime()), jsonObj);
+
+            String path = context.getFilesDir().getPath() + "/personalized_data.json";
+            FileWriter fw = new FileWriter(path, false);
+            fw.write(dbUnique.toString());
+            fw.close();
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }
