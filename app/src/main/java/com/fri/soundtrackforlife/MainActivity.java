@@ -30,6 +30,7 @@ import android.net.Uri;
 import android.content.ContentResolver;
 import android.database.Cursor;
 import android.os.AsyncTask;
+import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 import android.provider.MediaStore;
@@ -41,6 +42,7 @@ import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import com.fri.soundtrackforlife.MusicService.MusicBinder;
@@ -105,12 +107,17 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     private String currentScreen;
     private ArrayList<Song> recommendedSongList;
     SongClassifier songClassifier;
+    private ImageView splashScreen;
+    private TextView splashScreenText;
+    Song lastFeedbackSong;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         songView = findViewById(R.id.song_list);
+        splashScreen = findViewById(R.id.splash_screen);
+        splashScreenText = findViewById(R.id.splash_screen_text);
         songList = new ArrayList<>();
         fex = new FeatureExtractor(this.getAssets(), this);
 
@@ -370,10 +377,13 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     }
 
     void addRecordWithFeatures(Song song, int feedback) {
-        double[][] features = fex.extractFeatures(song);
-        int activity = getCurrentActivity();
-        long id = addRecord(song, feedback, activity, features);
-        addRecordToFirebase(song, feedback, activity, features, id);
+        if (checkLastFeedbackSong(song)) {
+            setLastFeedbackSong(song);
+            double[][] features = fex.extractFeatures(song);
+            int activity = getCurrentActivity();
+            long id = addRecord(song, feedback, activity, features);
+            addRecordToFirebase(song, feedback, activity, features, id);
+        }
     }
 
     private long addRecord(Song song, int feedback, int activityType, double[][] features) {
@@ -729,6 +739,14 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         }
         db.close();
         System.out.println("Feature calculation completed.");
+
+        new Handler(Looper.getMainLooper()).post(new Runnable() {
+            @Override
+            public void run() {
+                splashScreen.setVisibility(View.GONE);
+                splashScreenText.setVisibility(View.GONE);
+            }
+        });
     }
 
     private ArrayList<Song> getRecommendedSongList(double[] features) {
@@ -756,5 +774,25 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         });
 
         return recommendedSongList;
+    }
+
+    public void recommendSong(View view) {
+        if (musicSrv.getMainActivity() == null) {
+            musicSrv.setMainActivity(this);
+        }
+        musicSrv.playNext();
+        controller.show(0);
+        incrementCounts();
+    }
+
+    public void setLastFeedbackSong(Song song) {
+        lastFeedbackSong = song;
+    }
+
+    public boolean checkLastFeedbackSong(Song song) {
+        if (lastFeedbackSong == null || lastFeedbackSong != song) {
+            return true;
+        }
+        return false;
     }
 }
