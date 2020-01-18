@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -690,7 +691,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
 
         databaseReferenceFeedback.push().setValue(new SongFirebaseEntry(
                 song.getTitle(), song.getArtist(), feedbackString, getActivityString(activityType),
-                location, time, feats, id
+                location, time, feats, id, getUserId()
         ));
     }
 
@@ -795,5 +796,19 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
             return true;
         }
         return false;
+    }
+
+    private String getUserId() {
+
+        String userId = getSharedPreferences("prefs", Context.MODE_PRIVATE).getString("userid", "none");
+        if (userId.equals("none")) {
+            userId = "user-" + new Date().getTime();
+            getSharedPreferences("prefs", Context.MODE_PRIVATE).
+                    edit().
+                    putString("userid", userId).
+                    apply();
+        }
+
+        return userId;
     }
 }
