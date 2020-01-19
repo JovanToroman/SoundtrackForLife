@@ -17,6 +17,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import android.Manifest;
 import android.app.PendingIntent;
@@ -88,7 +90,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     final int MY_PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE = 0;
     final int MY_REQUEST_PERMISSIONS_REQUEST_CODE = 2;
     private ActivityRecognitionClient activityRecognitionClient;
-    long DETECTION_INTERVAL_IN_MILLISECONDS = 30 * 1000;
+    long DETECTION_INTERVAL_IN_MILLISECONDS = 5 * 1000;
     private FeatureExtractor fex;
     private ArrayList<Song> songPlaylist;
     private ListView songPlaylistView;
@@ -111,6 +113,8 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     private ImageView splashScreen;
     private TextView splashScreenText;
     Song lastFeedbackSong;
+    private String displayedActivity;
+    private Song displayedNextSong;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -151,6 +155,43 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         currentScreen = "main";
 
         initializeActivityMap();
+
+        setupMediaPlayerRefreshing();
+    }
+
+    private void setupMediaPlayerRefreshing() {
+        int interval = 1000 * 5; // 5 Second
+        new Timer().scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                            try {
+                                Thread.sleep(interval);
+                                String activity = getActivityString(getCurrentActivity());
+                                if (!activity.equals(displayedActivity)) {
+                                    displayedNextSong = songList.get(musicSrv.resolveNextSong());
+                                    displayedActivity = activity;
+                                    runOnUiThread(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            controller.refresh(songList, activity, displayedNextSong.getTitle(),
+                                                    musicSrv.getCurrentSongData().getTitle());
+                                        }
+                                    });
+
+                                } else {
+                                    runOnUiThread(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            controller.refresh(songList, activity, displayedNextSong.getTitle(),
+                                                    musicSrv.getCurrentSongData().getTitle());
+                                        }
+                                    });
+                                }
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        }
+            }, 1000 * 15, interval);
     }
 
     private void songListSetup() {
@@ -326,6 +367,16 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         controller.setSongIsPlaying(true);
         controller.show(0);
         incrementCounts();
+
+        initPlayerValues();
+    }
+
+    private void initPlayerValues() {
+        displayedNextSong = songList.get(musicSrv.resolveNextSong());
+        displayedActivity = getActivityString(getCurrentActivity());
+        controller.refresh(songList, getActivityString(getCurrentActivity()),
+                displayedNextSong.getTitle(),
+                musicSrv.getCurrentSongData().getTitle());
     }
 
     private void updateCounts() {
@@ -520,10 +571,16 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         } catch (Exception e) {
             Log.d("implicit_feedback", "Exception while implicit feedback");
         }
-        musicSrv.playNext();
+        if (displayedNextSong != null) {
+            musicSrv.playNext(displayedNextSong);
+        } else {
+            musicSrv.playNext();
+        }
         controller.show(0);
 
         incrementCounts();
+
+        initPlayerValues();
     }
 
     private void playPrev(){
@@ -531,6 +588,8 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         controller.show(0);
 
         incrementCounts();
+
+        initPlayerValues();
     }
 
     private void incrementCounts() {
@@ -782,9 +841,14 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         if (musicSrv.getMainActivity() == null) {
             musicSrv.setMainActivity(this);
         }
-        musicSrv.playNext();
+        if (displayedNextSong != null) {
+            musicSrv.playNext(displayedNextSong);
+        } else {
+            musicSrv.playNext();
+        }
         controller.show(0);
         incrementCounts();
+        initPlayerValues();
     }
 
     public void setLastFeedbackSong(Song song) {

@@ -242,7 +242,13 @@ public class MusicService extends Service implements
         playSong();
     }
 
-    private int resolveNextSong(){
+    public void playNext(Song songToPlay){
+        prevSongPosn = songPosn;
+        songPosn = songs.indexOf(songToPlay);
+        playSong();
+    }
+
+    int resolveNextSong(){
         int activityId = mainActivity.getCurrentActivity();
         List<Song> currentActivityPlaylist = songPlaylists.get(activityId);
 

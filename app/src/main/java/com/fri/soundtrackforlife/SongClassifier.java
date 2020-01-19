@@ -237,8 +237,12 @@ class SongClassifier {
                 feedbackString = "like";
             }
             double feats[] = new double[8];
-            for (int i=0; i<feats.length; i++) {
-                feats[i] = features[i][0];
+            if(features != null && features[0] != null && features[0].length > 0) {
+                for (int i = 0; i < feats.length; i++) {
+                    feats[i] = features[i][0];
+                }
+            } else {
+                return;
             }
             jsonObj.put("features", new JSONArray(feats));
             jsonObj.put("feedback", feedbackString);
