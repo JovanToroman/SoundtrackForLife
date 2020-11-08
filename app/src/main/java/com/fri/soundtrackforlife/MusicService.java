@@ -1,31 +1,30 @@
 package com.fri.soundtrackforlife;
 
+import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.Service;
+import android.content.ContentUris;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
+import android.media.AudioManager;
 import android.media.MediaPlayer;
+import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Binder;
 import android.os.Build;
 import android.os.IBinder;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-
-import android.content.ContentUris;
-import android.media.AudioManager;
-import android.net.Uri;
-import android.os.Binder;
 import android.os.PowerManager;
 import android.util.Log;
-import android.app.Notification;
-import android.app.PendingIntent;
 
 import androidx.annotation.RequiresApi;
 import androidx.core.app.NotificationCompat;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
 
 
 public class MusicService extends Service implements

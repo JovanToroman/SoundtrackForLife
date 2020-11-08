@@ -16,7 +16,6 @@ import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 
-
 import jAudioFeatureExtractor.ACE.DataTypes.Batch;
 import jAudioFeatureExtractor.Aggregators.Mean;
 import jAudioFeatureExtractor.Aggregators.MultipleFeatureHistogram;

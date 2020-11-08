@@ -11,7 +11,6 @@ import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -59,18 +58,19 @@ class SongClassifier {
         addValues(playlistKeys, jsonObject, dataLike, dataDislike, "playlist");
         addValues(personalizedKeys, personalizedData, dataLike, dataDislike, "feedback");
 
+        System.out.println(dataLike.size() + " " + dataDislike.size());
         bayes = new BayesClassifier<>();
 
-        for (List<Double> l : dataLike){
-            bayes.learn(true, l);
-        }
-        for (List<Double> d : dataDislike){
-            bayes.learn(false, d);
-        }
+//        for (List<Double> l : dataLike){
+//            bayes.learn(true, l);
+//        }
+//        for (List<Double> d : dataDislike){
+//            bayes.learn(false, d);
+//        }
 
 
         // to evaluate model. Accuracy approximately 64%
-//        System.out.println(evaluateModel(dataLike, dataDislike, bayes));
+        System.out.println(evaluateModel(dataLike, dataDislike, bayes));
 
         bayes.setMemoryCapacity(700);
     }
@@ -173,7 +173,7 @@ class SongClassifier {
 
         for (List<Double> s: dataLikeTest
         ) {
-            Boolean result = true;
+            Boolean result = bayes.classify(s).getCategory();
             if (result) {
                 correct++;
             }
@@ -182,12 +182,13 @@ class SongClassifier {
 
         for (List<Double> s: dataDislikeTest
         ) {
-            Boolean result = true;
+            Boolean result = bayes.classify(s).getCategory();
             if (!result) {
                 correct++;
             }
             total++;
         }
+        System.out.println("Correct: " +correct + ", Total: " + total);
         return (double)correct/total;
     }
 
