@@ -15,18 +15,11 @@
     android:id="@+id/song_view">
 
         <Button
-            android:id="@+id/button4"
+            android:id="@+id/play_button"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:onClick="goToPlaylistMaker"
-            android:text="Make playlists" />
-
-        <Button
-            android:id="@+id/send_feedback"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:onClick="sendFeedback"
-            android:text="Send feedback" />
+            android:onClick="recommendSong"
+            android:text="Play!" />
 
         <ListView
             android:id="@+id/song_list"
@@ -34,5 +27,20 @@
             android:layout_height="wrap_content" />
 
     </LinearLayout>
+
+    <ImageView
+        android:id="@+id/splash_screen"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:srcCompat="@android:color/holo_blue_dark" />
+
+    <TextView
+        android:id="@+id/splash_screen_text"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:text="Initializing..."
+        android:textAlignment="center"
+        android:textColor="@color/colorAccent" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

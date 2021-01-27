@@ -1,22 +1,30 @@
 package com.fri.soundtrackforlife;
 
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.Service;
+import android.content.ContentUris;
+import android.content.Context;
 import android.content.Intent;
+import android.graphics.Color;
+import android.media.AudioManager;
 import android.media.MediaPlayer;
+import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Binder;
 import android.os.Build;
 import android.os.IBinder;
-import java.util.ArrayList;
-import java.util.Random;
-
-import android.content.ContentUris;
-import android.media.AudioManager;
-import android.net.Uri;
-import android.os.Binder;
 import android.os.PowerManager;
 import android.util.Log;
-import android.app.Notification;
-import android.app.PendingIntent;
+
+import androidx.annotation.RequiresApi;
+import androidx.core.app.NotificationCompat;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
 
 
 public class MusicService extends Service implements
@@ -27,7 +35,8 @@ public class MusicService extends Service implements
     private MediaPlayer player;
     private MainActivity mainActivity;
     //song list
-    private ArrayList<Song> songs;
+    private List<Song> songs;
+    private Map<Integer, List<Song>> songPlaylists;
     private String songTitle="";
     private static final int NOTIFY_ID=1;
 
@@ -36,7 +45,6 @@ public class MusicService extends Service implements
     private int prevSongPosn;
     private final IBinder musicBind = new MusicBinder();
 
-    private boolean shuffle=true;
     private Random rand;
 
     @Override
@@ -73,20 +81,47 @@ public class MusicService extends Service implements
         PendingIntent pendInt = PendingIntent.getActivity(this, 0,
                 notIntent, PendingIntent.FLAG_UPDATE_CURRENT);
 
-        Notification.Builder builder = null;
-        if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
-            builder = new Notification.Builder(this);
-            builder.setContentIntent(pendInt)
-                    .setSmallIcon(R.drawable.play)
-                    .setTicker(songTitle)
-                    .setOngoing(true)
-                    .setContentTitle("Playing")
-            .setContentText(songTitle);
-            Notification not = builder.build();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startMyOwnForeground();
+        } else {
+            Notification.Builder builder = null;
+            if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
+                builder = new Notification.Builder(this);
+                builder.setContentIntent(pendInt)
+                        .setSmallIcon(R.drawable.play)
+                        .setTicker(songTitle)
+                        .setOngoing(true)
+                        .setContentTitle("Playing")
+                        .setContentText(songTitle);
+                Notification not = builder.build();
 
-            startForeground(NOTIFY_ID, not);
+                startForeground(NOTIFY_ID, not);
+            }
         }
+    }
 
+    @RequiresApi(api = Build.VERSION_CODES.O)
+    private void startMyOwnForeground(){
+        String NOTIFICATION_CHANNEL_ID = "com.fri.soundtrackforlife";
+        String channelName = "Music Player";
+        NotificationChannel chan = new NotificationChannel(NOTIFICATION_CHANNEL_ID, channelName, NotificationManager.IMPORTANCE_NONE);
+        chan.setLightColor(Color.BLUE);
+        chan.setLockscreenVisibility(Notification.VISIBILITY_PRIVATE);
+        NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        assert manager != null;
+        manager.createNotificationChannel(chan);
+
+        NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID);
+        Notification notification = notificationBuilder.setOngoing(true)
+                .setSmallIcon(R.drawable.play)
+                .setContentTitle("Playing")
+                .setPriority(NotificationManager.IMPORTANCE_MIN)
+                .setCategory(Notification.CATEGORY_SERVICE)
+                .setTicker(songTitle)
+                .setOngoing(true)
+                .setContentText(songTitle)
+                .build();
+        startForeground(2, notification);
     }
 
     public void initMusicPlayer(){
@@ -98,8 +133,12 @@ public class MusicService extends Service implements
         player.setOnErrorListener(this);
     }
 
-    public void setList(ArrayList<Song> theSongs){
+    public void setList(List<Song> theSongs){
         songs=theSongs;
+    }
+
+    public void setSongPlaylist(Map<Integer,List<Song>> theSongs){
+        songPlaylists=theSongs;
     }
 
     public void playSong(){
@@ -159,16 +198,6 @@ public class MusicService extends Service implements
         }
     }
 
-    public boolean setShuffle(){
-        if(shuffle) {
-            shuffle=false;
-        }
-        else {
-            shuffle=true;
-        }
-        return shuffle;
-    }
-
     public int getPosn() {
         return player.getCurrentPosition();
     }
@@ -208,30 +237,31 @@ public class MusicService extends Service implements
 
     public void playNext(){
         prevSongPosn = songPosn;
-        songPosn = resolveNextSong(shuffle);
+        songPosn = resolveNextSong();
         playSong();
     }
 
-    private int resolveNextSong(boolean random){
+    public void playNext(Song songToPlay){
+        prevSongPosn = songPosn;
+        songPosn = songs.indexOf(songToPlay);
+        playSong();
+    }
+
+    int resolveNextSong(){
         int activityId = mainActivity.getCurrentActivity();
+        List<Song> currentActivityPlaylist = songPlaylists.get(activityId);
 
         int minCount = Integer.MAX_VALUE;
-        for (Song s : songs) {
+        for (Song s : currentActivityPlaylist) {
             if (s.getCounts().get(activityId) < minCount) {
                 minCount = s.getCounts().get(activityId);
             }
         }
         int newSong = songPosn;
 
-        if (random) {
-            while (newSong == songPosn || songs.get(newSong).getCounts().get(activityId) != minCount) {
-                newSong = rand.nextInt(songs.size());
-            }
-        } else {
-            newSong++;
-            if(newSong >= songs.size()) {
-                newSong = 0;
-            }
+        while (newSong == songPosn || currentActivityPlaylist.get(newSong).getCounts().get(activityId) != minCount) {
+            Song temp = currentActivityPlaylist.get(rand.nextInt(currentActivityPlaylist.size()));
+            newSong = getSongPosn(temp.getTitle(), temp.getArtist());
         }
         return newSong;
     }

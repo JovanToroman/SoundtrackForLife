@@ -3,12 +3,11 @@ package com.fri.soundtrackforlife;
 import android.app.IntentService;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Handler;
 import android.os.Looper;
 import android.widget.Toast;
 
 import com.google.android.gms.location.ActivityRecognitionResult;
-
-import android.os.Handler;
 
 public class DetectedActivitiesIntentService extends IntentService {
 
