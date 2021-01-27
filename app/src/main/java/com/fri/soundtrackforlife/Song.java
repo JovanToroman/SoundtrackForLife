@@ -13,9 +13,9 @@ public class Song {
     private double[][] features;
 
     public Song(long songID, String songTitle, String songArtist, String songRelativePath) {
-        id=songID;
-        title=songTitle;
-        artist=songArtist;
+        id = songID;
+        title = songTitle;
+        artist = songArtist;
         relativePath = songRelativePath;
         counts = initCounts();
         score = 0;
@@ -31,20 +31,32 @@ public class Song {
         return ret;
     }
 
-    public long getID(){return id;}
-    public String getTitle(){return title;}
-    public String getArtist(){return artist;}
-    public String getRelativePath() {return relativePath;}
+    public long getID() {
+        return id;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public String getArtist() {
+        return artist;
+    }
+
+    public String getRelativePath() {
+        return relativePath;
+    }
+
     Map<Integer, Integer> getCounts() {
         return counts;
     }
 
-    public void setScore(double s) {
-        score = s;
-    }
-
     public double getScore() {
         return score;
+    }
+
+    public void setScore(double s) {
+        score = s;
     }
 
     public double[][] getFeatures() {

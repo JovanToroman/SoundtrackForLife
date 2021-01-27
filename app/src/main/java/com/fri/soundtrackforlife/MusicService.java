@@ -31,20 +31,18 @@ public class MusicService extends Service implements
         MediaPlayer.OnPreparedListener, MediaPlayer.OnErrorListener,
         MediaPlayer.OnCompletionListener {
 
+    private static final int NOTIFY_ID = 1;
+    private final IBinder musicBind = new MusicBinder();
     //media player
     private MediaPlayer player;
     private MainActivity mainActivity;
     //song list
     private List<Song> songs;
     private Map<Integer, List<Song>> songPlaylists;
-    private String songTitle="";
-    private static final int NOTIFY_ID=1;
-
+    private String songTitle = "";
     //current position
     private int songPosn;
     private int prevSongPosn;
-    private final IBinder musicBind = new MusicBinder();
-
     private Random rand;
 
     @Override
@@ -53,21 +51,21 @@ public class MusicService extends Service implements
     }
 
     @Override
-    public boolean onUnbind(Intent intent){
+    public boolean onUnbind(Intent intent) {
         player.stop();
         player.release();
         return false;
     }
 
-    public void onCreate(){
+    public void onCreate() {
         //create the service
         super.onCreate();
         //initialize position
-        songPosn=0;
+        songPosn = 0;
         prevSongPosn = 0; // songs.size() - 1 produces error
         //create player
         player = new MediaPlayer();
-        rand=new Random();
+        rand = new Random();
 
         initMusicPlayer();
     }
@@ -101,7 +99,7 @@ public class MusicService extends Service implements
     }
 
     @RequiresApi(api = Build.VERSION_CODES.O)
-    private void startMyOwnForeground(){
+    private void startMyOwnForeground() {
         String NOTIFICATION_CHANNEL_ID = "com.fri.soundtrackforlife";
         String channelName = "Music Player";
         NotificationChannel chan = new NotificationChannel(NOTIFICATION_CHANNEL_ID, channelName, NotificationManager.IMPORTANCE_NONE);
@@ -124,7 +122,7 @@ public class MusicService extends Service implements
         startForeground(2, notification);
     }
 
-    public void initMusicPlayer(){
+    public void initMusicPlayer() {
         player.setWakeMode(getApplicationContext(),
                 PowerManager.PARTIAL_WAKE_LOCK);
         player.setAudioStreamType(AudioManager.STREAM_MUSIC);
@@ -133,50 +131,48 @@ public class MusicService extends Service implements
         player.setOnErrorListener(this);
     }
 
-    public void setList(List<Song> theSongs){
-        songs=theSongs;
+    public void setList(List<Song> theSongs) {
+        songs = theSongs;
     }
 
-    public void setSongPlaylist(Map<Integer,List<Song>> theSongs){
-        songPlaylists=theSongs;
+    public void setSongPlaylist(Map<Integer, List<Song>> theSongs) {
+        songPlaylists = theSongs;
     }
 
-    public void playSong(){
+    public void playSong() {
         player.reset();
 
         //get song
         Song playSong = songs.get(songPosn);
-        songTitle=playSong.getTitle();
+        songTitle = playSong.getTitle();
         //get id
         long currSong = playSong.getID();
         //set uri
         Uri trackUri = ContentUris.withAppendedId(
                 android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
                 currSong);
-        try{
+        try {
             player.setDataSource(getApplicationContext(), trackUri);
-        }
-        catch(Exception e){
+        } catch (Exception e) {
             Log.e("MUSIC SERVICE", "Error setting data source", e);
         }
         try {
             player.prepareAsync();
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             Log.e("MUSIC SERVICE", "prepareAsync() crashed");
         }
     }
 
     @Override
     public void onCompletion(MediaPlayer mp) {
-            prevSongPosn = songPosn;
-            try {
-                AsyncTask.execute(() -> mainActivity.addRecordWithFeatures(getCurrentSongData(), MainActivity.LIKE));
-            } catch (Exception e) {
-                Log.d("implicit_feedback", "Exception while implicit feedback");
-            }
-            mp.reset();
-            playNext();
+        prevSongPosn = songPosn;
+        try {
+            AsyncTask.execute(() -> mainActivity.addRecordWithFeatures(getCurrentSongData(), MainActivity.LIKE));
+        } catch (Exception e) {
+            Log.d("implicit_feedback", "Exception while implicit feedback");
+        }
+        mp.reset();
+        playNext();
     }
 
     @Override
@@ -192,62 +188,56 @@ public class MusicService extends Service implements
         }
     }
 
-    public class MusicBinder extends Binder {
-        MusicService getService() {
-            return MusicService.this;
-        }
-    }
-
     public int getPosn() {
         return player.getCurrentPosition();
     }
 
-    public void setSong(int songIndex){
-        songPosn=songIndex;
+    public void setSong(int songIndex) {
+        songPosn = songIndex;
     }
 
     public Song getCurrentSongData() {
         return songs.get(songPosn);
     }
 
-    public int getDur(){
+    public int getDur() {
         return player.getDuration();
     }
 
-    public boolean isPng(){
+    public boolean isPng() {
         return player.isPlaying();
     }
 
-    public void pausePlayer(){
+    public void pausePlayer() {
         player.pause();
     }
 
-    public void seek(int posn){
+    public void seek(int posn) {
         player.seekTo(posn);
     }
 
-    public void go(){
+    public void go() {
         player.start();
     }
 
-    public void playPrev(){
+    public void playPrev() {
         songPosn = prevSongPosn;
         playSong();
     }
 
-    public void playNext(){
+    public void playNext() {
         prevSongPosn = songPosn;
         songPosn = resolveNextSong();
         playSong();
     }
 
-    public void playNext(Song songToPlay){
+    public void playNext(Song songToPlay) {
         prevSongPosn = songPosn;
         songPosn = songs.indexOf(songToPlay);
         playSong();
     }
 
-    int resolveNextSong(){
+    int resolveNextSong() {
         int activityId = mainActivity.getCurrentActivity();
         List<Song> currentActivityPlaylist = songPlaylists.get(activityId);
 
@@ -322,5 +312,11 @@ public class MusicService extends Service implements
 
     public MediaPlayer getPlayer() {
         return player;
+    }
+
+    public class MusicBinder extends Binder {
+        MusicService getService() {
+            return MusicService.this;
+        }
     }
 }

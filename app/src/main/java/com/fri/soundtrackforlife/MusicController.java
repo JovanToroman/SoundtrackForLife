@@ -11,11 +11,12 @@ public class MusicController extends MediaController {
 
     private boolean songIsPlaying = false;
 
-    public MusicController(Context c){
+    public MusicController(Context c) {
         super(c);
     }
 
-    public void hide(){}
+    public void hide() {
+    }
 
     public boolean isSongPlaying() {
         return songIsPlaying;
@@ -32,17 +33,17 @@ public class MusicController extends MediaController {
     @Override
     public void setAnchorView(View view) {
         super.setAnchorView(view);
-        View songInfo = View.inflate(getContext(),R.layout.song_info, null);
+        View songInfo = View.inflate(getContext(), R.layout.song_info, null);
         TextView type = songInfo.findViewById(R.id.song_info_type);
         type.setText("Listening to");
         addView(songInfo);
 
-        View activityInfo = View.inflate(getContext(),R.layout.activity_info, null);
+        View activityInfo = View.inflate(getContext(), R.layout.activity_info, null);
         TextView activityLabel = activityInfo.findViewById(R.id.activity_label);
         activityLabel.setText("Current activity");
         addView(activityInfo);
 
-        View songInfoNext = View.inflate(getContext(),R.layout.next_song_info, null);
+        View songInfoNext = View.inflate(getContext(), R.layout.next_song_info, null);
         TextView typeNext = songInfoNext.findViewById(R.id.next_song_info_type);
         typeNext.setText("Coming up next");
         addView(songInfoNext);

@@ -34,7 +34,7 @@ public class FeedbackDBreader extends SQLiteOpenHelper {
         super(context, DATABASE_NAME, null, 1);
         this.context = context;
         SQLiteDatabase db = context.openOrCreateDatabase(DATABASE_NAME, Context.MODE_PRIVATE, null);
-        db.execSQL("create table IF NOT EXISTS "+ FEEDBACK_TABLE_NAME + " (_id integer primary key autoincrement, "
+        db.execSQL("create table IF NOT EXISTS " + FEEDBACK_TABLE_NAME + " (_id integer primary key autoincrement, "
                 + "value short not null,"
                 + "songtitle text not null,"
                 + "activity short not null,"
@@ -48,16 +48,16 @@ public class FeedbackDBreader extends SQLiteOpenHelper {
                 + "feature7 float,"
                 + "feature8 float,"
                 + "created DATETIME DEFAULT CURRENT_TIMESTAMP"
-                +");");
+                + ");");
 
-        db.execSQL("create table IF NOT EXISTS "+ PLAY_TABLE_NAME + " (_id integer primary key autoincrement, "
+        db.execSQL("create table IF NOT EXISTS " + PLAY_TABLE_NAME + " (_id integer primary key autoincrement, "
                 + "songtitle text not null,"
                 + "activity short not null,"
                 + "count integer not null,"
                 + "created DATETIME DEFAULT CURRENT_TIMESTAMP"
-                +");");
+                + ");");
 
-        db.execSQL("create table IF NOT EXISTS "+ FEATURES_TABLE_NAME + " (_id integer primary key autoincrement, "
+        db.execSQL("create table IF NOT EXISTS " + FEATURES_TABLE_NAME + " (_id integer primary key autoincrement, "
                 + "songtitle text not null,"
                 + "feature1 float,"
                 + "feature2 float,"
@@ -68,12 +68,12 @@ public class FeedbackDBreader extends SQLiteOpenHelper {
                 + "feature7 float,"
                 + "feature8 float,"
                 + "created DATETIME DEFAULT CURRENT_TIMESTAMP"
-                +");");
+                + ");");
 
         db.close();
     }
 
-    Cursor retrieveSongPlayCounts(){
+    Cursor retrieveSongPlayCounts() {
         SQLiteDatabase db = context.openOrCreateDatabase(DATABASE_NAME, Context.MODE_PRIVATE, null);
         return db.rawQuery("SELECT _id, songtitle, activity, count FROM " + PLAY_TABLE_NAME, null);
     }
@@ -111,7 +111,7 @@ public class FeedbackDBreader extends SQLiteOpenHelper {
         Cursor c = db.rawQuery("SELECT * FROM " + FEEDBACK_TABLE_NAME, null);
         StringBuilder b = new StringBuilder();
         b.append("{\"data\":[");
-        while(c.moveToNext()) {
+        while (c.moveToNext()) {
             b.append("{");
             b.append("\"id\":\"" + c.getString(0) + "\",");
             b.append("\"value\":\"" + c.getString(1) + "\",");
@@ -119,7 +119,7 @@ public class FeedbackDBreader extends SQLiteOpenHelper {
             b.append("\"activity\":\"" + c.getString(3) + "\",");
             b.append("\"location\":\"" + c.getString(4) + "\",");
             for (int i = 1; i < 9; i++) {
-                b.append("\"feature" + i + "\":\"" + c.getString(i+4) + "\",");
+                b.append("\"feature" + i + "\":\"" + c.getString(i + 4) + "\",");
             }
             b.append("\"created\":\"" + c.getString(13) + "\"},");
             // delete the last comma
@@ -144,9 +144,9 @@ public class FeedbackDBreader extends SQLiteOpenHelper {
 
             @Override
             public void onResponse(Call call, Response response) throws IOException {
-                Log.d("response",response.body().string());
-                Log.d("feedback","success");
-                if(response.code() == 200) {
+                Log.d("response", response.body().string());
+                Log.d("feedback", "success");
+                if (response.code() == 200) {
                     db.execSQL("DELETE FROM " + FEEDBACK_TABLE_NAME);
                 }
                 db.close();

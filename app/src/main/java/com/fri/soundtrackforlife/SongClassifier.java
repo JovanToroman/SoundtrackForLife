@@ -31,10 +31,10 @@ import static com.fri.soundtrackforlife.MainActivity.DISLIKE;
 class SongClassifier {
 
     static Map<String, Double> activities;
-    private Classifier<Double, Boolean> bayes;
     JSONObject dbUnique;
     JSONObject personalizedData;
     Context context;
+    private Classifier<Double, Boolean> bayes;
 
 
     SongClassifier(Context c) throws IOException, JSONException {
@@ -77,18 +77,19 @@ class SongClassifier {
 
     /**
      * The method for predicting if a user will like a certain song for a specific activity.
+     *
      * @param detectedActivity Google activity api enum
-     * @param features two-dim double array containing values of eight reference features
+     * @param features         two-dim double array containing values of eight reference features
      * @return a Boolean describing user's liking (true='like', false='dislike')
      */
     Boolean predictSongLiking(Integer detectedActivity, double[][] features) {
         List<Double> predictionFeatures = new ArrayList<>();
-        if(features != null && features[0] != null && features[0].length > 0) {
-            for(int i = 0; i < 8; i++) {
+        if (features != null && features[0] != null && features[0].length > 0) {
+            for (int i = 0; i < 8; i++) {
                 predictionFeatures.add(features[i][0]);
             }
         }
-        predictionFeatures.add((double)detectedActivity);
+        predictionFeatures.add((double) detectedActivity);
         return bayes.classify(predictionFeatures).getCategory();
     }
 
@@ -98,7 +99,7 @@ class SongClassifier {
         BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
         String line = reader.readLine();
         StringBuilder sb = new StringBuilder();
-        while(line != null) {
+        while (line != null) {
             sb.append(line);
             line = reader.readLine();
         }
@@ -114,14 +115,13 @@ class SongClassifier {
             BufferedReader reader = new BufferedReader(new FileReader(file));
             String line = reader.readLine();
             StringBuilder sb = new StringBuilder();
-            while(line != null) {
+            while (line != null) {
                 sb.append(line);
                 line = reader.readLine();
             }
             reader.close();
             return sb.toString();
-        }
-        else {
+        } else {
             makePersonalizedJson();
             return "{\"feedback\": {}}";
         }
@@ -154,16 +154,16 @@ class SongClassifier {
     }
 
     private double evaluateModel(List<List<Double>> dataLike, List<List<Double>> dataDislike, Classifier<Double, Boolean> bayes) {
-        List<List<Double>> dataLikeTrain = new ArrayList<>(dataLike.subList(0, (int)(dataLike.size() * 0.8)));
-        List<List<Double>> dataLikeTest = new ArrayList<>(dataLike.subList((int)(dataLike.size() * 0.8), dataLike.size()));
+        List<List<Double>> dataLikeTrain = new ArrayList<>(dataLike.subList(0, (int) (dataLike.size() * 0.8)));
+        List<List<Double>> dataLikeTest = new ArrayList<>(dataLike.subList((int) (dataLike.size() * 0.8), dataLike.size()));
 
-        List<List<Double>> dataDislikeTrain = new ArrayList<>(dataDislike.subList(0, (int)(dataDislike.size() * 0.8)));
-        List<List<Double>> dataDislikeTest = new ArrayList<>(dataDislike.subList((int)(dataDislike.size() * 0.8), dataDislike.size()));
+        List<List<Double>> dataDislikeTrain = new ArrayList<>(dataDislike.subList(0, (int) (dataDislike.size() * 0.8)));
+        List<List<Double>> dataDislikeTest = new ArrayList<>(dataDislike.subList((int) (dataDislike.size() * 0.8), dataDislike.size()));
 
-        for (List<Double> l : dataLikeTrain){
+        for (List<Double> l : dataLikeTrain) {
             bayes.learn(true, l);
         }
-        for (List<Double> d : dataDislikeTrain){
+        for (List<Double> d : dataDislikeTrain) {
             bayes.learn(false, d);
         }
 
@@ -171,7 +171,7 @@ class SongClassifier {
         int correct = 0;
         int total = 0;
 
-        for (List<Double> s: dataLikeTest
+        for (List<Double> s : dataLikeTest
         ) {
             Boolean result = bayes.classify(s).getCategory();
             if (result) {
@@ -180,7 +180,7 @@ class SongClassifier {
             total++;
         }
 
-        for (List<Double> s: dataDislikeTest
+        for (List<Double> s : dataDislikeTest
         ) {
             Boolean result = bayes.classify(s).getCategory();
             if (!result) {
@@ -188,16 +188,16 @@ class SongClassifier {
             }
             total++;
         }
-        System.out.println("Correct: " +correct + ", Total: " + total);
-        return (double)correct/total;
+        System.out.println("Correct: " + correct + ", Total: " + total);
+        return (double) correct / total;
     }
 
     private void initializeActivityMap() {
         activities = new HashMap<>();
-        activities.put("IN_VEHICLE", (double)DetectedActivity.IN_VEHICLE);
-        activities.put("ON_BICYCLE", (double)DetectedActivity.ON_BICYCLE);
-        activities.put("WALKING", (double)DetectedActivity.WALKING);
-        activities.put("RUNNING", (double)DetectedActivity.RUNNING);
+        activities.put("IN_VEHICLE", (double) DetectedActivity.IN_VEHICLE);
+        activities.put("ON_BICYCLE", (double) DetectedActivity.ON_BICYCLE);
+        activities.put("WALKING", (double) DetectedActivity.WALKING);
+        activities.put("RUNNING", (double) DetectedActivity.RUNNING);
         activities.put("ON_FOOT", (double) DetectedActivity.ON_FOOT);
         activities.put("UNKNOWN", (double) DetectedActivity.UNKNOWN);
         activities.put("TILTING", (double) DetectedActivity.TILTING);
@@ -213,15 +213,14 @@ class SongClassifier {
                     feats[i][0] = Double.valueOf(vals[i]);
                 }
             }
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
 
         return feats;
     }
 
-    public void makePersonalizedJson() throws IOException{
+    public void makePersonalizedJson() throws IOException {
         String path = context.getFilesDir().getPath() + "/personalized_data.json";
         FileWriter fw = new FileWriter(path, false);
         fw.write("{\"feedback\": {}}");
@@ -238,7 +237,7 @@ class SongClassifier {
                 feedbackString = "like";
             }
             double feats[] = new double[8];
-            if(features != null && features[0] != null && features[0].length > 0) {
+            if (features != null && features[0] != null && features[0].length > 0) {
                 for (int i = 0; i < feats.length; i++) {
                     feats[i] = features[i][0];
                 }
@@ -257,8 +256,7 @@ class SongClassifier {
             FileWriter fw = new FileWriter(path, false);
             fw.write(personalizedData.toString());
             fw.close();
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }

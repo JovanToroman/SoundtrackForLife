@@ -61,22 +61,27 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 public class MainActivity extends AppCompatActivity implements MediaPlayerControl {
-    
+
     public static final int LIKE = 1;
     public static final int DISLIKE = 0;
+    final int MY_PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE = 0;
+    final int MY_REQUEST_PERMISSIONS_REQUEST_CODE = 2;
     long UPDATE_INTERVAL_IN_MILLISECONDS = 360 * 1000;
+    long DETECTION_INTERVAL_IN_MILLISECONDS = 5 * 1000;
+    String selected_playlist;
+    String activityStr;
+    FirebaseDatabase firebaseDatabase;
+    DatabaseReference databaseReference;
+    SongClassifier songClassifier;
+    Song lastFeedbackSong;
     private Map<String, Integer> playlistActivityCodes;
-
     private ArrayList<Song> songList;
     private ListView songView;
     private MusicService musicSrv;
     private Intent playIntent;
-    private boolean musicBound=false;
+    private boolean musicBound = false;
     private MusicController controller;
-    final int MY_PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE = 0;
-    final int MY_REQUEST_PERMISSIONS_REQUEST_CODE = 2;
     private ActivityRecognitionClient activityRecognitionClient;
-    long DETECTION_INTERVAL_IN_MILLISECONDS = 5 * 1000;
     private FeatureExtractor fex;
     private ArrayList<Song> songPlaylist;
     private ListView songPlaylistView;
@@ -84,10 +89,6 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     private ListView songSearchListView;
     private TextInputEditText searchInput;
     private SongAdapter songSearchAdapter;
-    String selected_playlist;
-    String activityStr;
-    FirebaseDatabase firebaseDatabase;
-    DatabaseReference databaseReference;
     private FusedLocationProviderClient fusedLocationClient;
     private LocationCallback locationCallback;
     private LocationRequest locationRequest;
@@ -95,12 +96,29 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     private MenuItem backButton;
     private String currentScreen;
     private ArrayList<Song> recommendedSongList;
-    SongClassifier songClassifier;
     private ImageView splashScreen;
     private TextView splashScreenText;
-    Song lastFeedbackSong;
     private String displayedActivity;
     private Song displayedNextSong;
+    //connect to the service
+    private ServiceConnection musicConnection = new ServiceConnection() {
+
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            MusicBinder binder = (MusicBinder) service;
+            //get service
+            musicSrv = binder.getService();
+            //pass list
+            musicSrv.setList(songList);
+            musicSrv.setSongPlaylist(generatePlaylists());
+            musicBound = true;
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            musicBound = false;
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -150,34 +168,34 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         new Timer().scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
-                            try {
-                                Thread.sleep(interval);
-                                String activity = getActivityString(getCurrentActivity());
-                                if (!activity.equals(displayedActivity)) {
-                                    displayedNextSong = songList.get(musicSrv.resolveNextSong());
-                                    displayedActivity = activity;
-                                    runOnUiThread(new Runnable() {
-                                        @Override
-                                        public void run() {
-                                            controller.refresh(songList, activity, displayedNextSong.getTitle(),
-                                                    musicSrv.getCurrentSongData().getTitle());
-                                        }
-                                    });
-
-                                } else {
-                                    runOnUiThread(new Runnable() {
-                                        @Override
-                                        public void run() {
-                                            controller.refresh(songList, activity, displayedNextSong.getTitle(),
-                                                    musicSrv.getCurrentSongData().getTitle());
-                                        }
-                                    });
-                                }
-                            } catch (Exception e) {
-                                e.printStackTrace();
+                try {
+                    Thread.sleep(interval);
+                    String activity = getActivityString(getCurrentActivity());
+                    if (!activity.equals(displayedActivity)) {
+                        displayedNextSong = songList.get(musicSrv.resolveNextSong());
+                        displayedActivity = activity;
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                controller.refresh(songList, activity, displayedNextSong.getTitle(),
+                                        musicSrv.getCurrentSongData().getTitle());
                             }
-                        }
-            }, 1000 * 15, interval);
+                        });
+
+                    } else {
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                controller.refresh(songList, activity, displayedNextSong.getTitle(),
+                                        musicSrv.getCurrentSongData().getTitle());
+                            }
+                        });
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }, 1000 * 15, interval);
     }
 
     private void songListSetup() {
@@ -257,39 +275,19 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     @Override
     protected void onStart() {
         super.onStart();
-        if(playIntent==null){
+        if (playIntent == null) {
             playIntent = new Intent(this, MusicService.class);
             bindService(playIntent, musicConnection, Context.BIND_AUTO_CREATE);
             startService(playIntent);
         }
     }
 
-    //connect to the service
-    private ServiceConnection musicConnection = new ServiceConnection(){
-
-        @Override
-        public void onServiceConnected(ComponentName name, IBinder service) {
-            MusicBinder binder = (MusicBinder)service;
-            //get service
-            musicSrv = binder.getService();
-            //pass list
-            musicSrv.setList(songList);
-            musicSrv.setSongPlaylist(generatePlaylists());
-            musicBound = true;
-        }
-
-        @Override
-        public void onServiceDisconnected(ComponentName name) {
-            musicBound = false;
-        }
-    };
-
     private Map<Integer, List<Song>> generatePlaylists() {
         Map<Integer, List<Song>> ret = new HashMap<>();
         for (String activity : SongClassifier.activities.keySet()) {
             List<Song> good = new ArrayList<>();
             int detectedActivity = SongClassifier.activities.get(activity).intValue();
-            for (Song s : songList){
+            for (Song s : songList) {
                 if (songClassifier.predictSongLiking(detectedActivity, s.getFeatures())) {
                     good.add(s);
                 }
@@ -300,7 +298,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     }
 
     @Override
-    protected void onResume(){
+    protected void onResume() {
         super.onResume();
         if (controller.isSongPlaying()) {
             setControllerAnchor();
@@ -320,7 +318,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         Uri musicUri = android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
         Cursor musicCursor = musicResolver.query(musicUri, null, null, null, null);
 
-        if(musicCursor!=null && musicCursor.moveToFirst()){
+        if (musicCursor != null && musicCursor.moveToFirst()) {
             //get columns
             int titleColumn = musicCursor.getColumnIndex(MediaStore.Audio.Media.TITLE);
             int relativePath = musicCursor.getColumnIndex(MediaStore.Audio.Media.DATA);
@@ -338,7 +336,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         }
     }
 
-    public void songPicked(View view){
+    public void songPicked(View view) {
 
         if (musicSrv.getMainActivity() == null) {
             musicSrv.setMainActivity(this);
@@ -397,7 +395,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         switch (item.getItemId()) {
             case R.id.action_end:
                 stopService(playIntent);
-                musicSrv=null;
+                musicSrv = null;
                 System.exit(0);
                 break;
             case R.id.action_dislike:
@@ -434,8 +432,8 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         values.put("value", feedback);
         values.put("location", getCurrentLocationLatitude() + "," + getCurrentLocationLongitude());
 
-        if(features != null && features[0] != null && features[0].length > 0) {
-            for(int i = 0; i < 8; i++) {
+        if (features != null && features[0] != null && features[0].length > 0) {
+            for (int i = 0; i < 8; i++) {
                 values.put("feature" + (i + 1), features[i][0]);
             }
         }
@@ -451,7 +449,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     @Override
     protected void onDestroy() {
         stopService(playIntent);
-        musicSrv=null;
+        musicSrv = null;
         super.onDestroy();
     }
 
@@ -472,20 +470,18 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
 
     @Override
     public int getDuration() {
-        if(musicSrv!=null && musicBound && musicSrv.isPng()) {
+        if (musicSrv != null && musicBound && musicSrv.isPng()) {
             return musicSrv.getDur();
-        }
-        else {
+        } else {
             return 0;
         }
     }
 
     @Override
     public int getCurrentPosition() {
-        if(musicSrv!=null && musicBound && musicSrv.isPng()){
+        if (musicSrv != null && musicBound && musicSrv.isPng()) {
             return musicSrv.getPosn();
-        }
-        else {
+        } else {
             return 0;
         }
     }
@@ -493,7 +489,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
 
     @Override
     public boolean isPlaying() {
-        if(musicSrv!=null && musicBound){
+        if (musicSrv != null && musicBound) {
             return musicSrv.isPng();
         }
         return false;
@@ -524,7 +520,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         return 0;
     }
 
-    private void setController(){
+    private void setController() {
         controller = new MusicController(this);
         controller.setPrevNextListeners(new View.OnClickListener() {
             @Override
@@ -547,12 +543,12 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         controller.setAnchorView(findViewById(R.id.song_view));
     }
 
-    private void playNext(){
+    private void playNext() {
         try {
             Song currentSong = musicSrv.getCurrentSongData();
             int current = musicSrv.getPlayer().getCurrentPosition();
             int duration = musicSrv.getPlayer().getDuration();
-            AsyncTask.execute(()-> addRecordWithFeatures(currentSong,
+            AsyncTask.execute(() -> addRecordWithFeatures(currentSong,
                     current < (duration / 2) ? MainActivity.DISLIKE : MainActivity.LIKE));
         } catch (Exception e) {
             Log.d("implicit_feedback", "Exception while implicit feedback");
@@ -569,7 +565,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         initPlayerValues();
     }
 
-    private void playPrev(){
+    private void playPrev() {
         musicSrv.playPrev();
         controller.show(0);
 
@@ -623,7 +619,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     }
 
     String getDay() {
-        return Calendar.getInstance().getTime().toString().substring(0,3);
+        return Calendar.getInstance().getTime().toString().substring(0, 3);
     }
 
     String getCurrentLocationLatitude() {
@@ -690,8 +686,8 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         DatabaseReference databaseReferencePlaylist = databaseReference.child("playlist");
 
         List<Double> feats = new ArrayList<>();
-        if(features != null && features[0] != null && features[0].length > 0) {
-            for(int i = 0; i < 8; i++) {
+        if (features != null && features[0] != null && features[0].length > 0) {
+            for (int i = 0; i < 8; i++) {
                 feats.add(features[i][0]);
             }
         }
@@ -712,8 +708,8 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         DatabaseReference databaseReferenceFeedback = databaseReference.child("feedback");
 
         List<Double> feats = new ArrayList<>();
-        if(features != null && features[0] != null && features[0].length > 0) {
-            for(int i = 0; i < 8; i++) {
+        if (features != null && features[0] != null && features[0].length > 0) {
+            for (int i = 0; i < 8; i++) {
                 feats.add(features[i][0]);
             }
         }
@@ -729,8 +725,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         String feedbackString = "";
         if (feedback == DISLIKE) {
             feedbackString = "dislike";
-        }
-        else {
+        } else {
             feedbackString = "like";
         }
 
@@ -756,8 +751,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
                     continue;
                 }
                 c.close();
-            }
-            catch (Exception e) {
+            } catch (Exception e) {
                 e.printStackTrace();
             }
 
@@ -765,21 +759,19 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
             if (features[0][0] == 0.0) {
                 System.out.println(s.getTitle() + " no entry in unique_db.json!");
                 features = fex.extractFeatures(s);
-            }
-            else {
+            } else {
                 System.out.println(s.getTitle() + " successfully got features from unique_db.json!");
             }
 
             ContentValues values = new ContentValues();
             values.put("songtitle", s.getTitle());
-            if(features != null && features[0] != null && features[0].length > 0) {
-                for(int i = 0; i < 8; i++) {
+            if (features != null && features[0] != null && features[0].length > 0) {
+                for (int i = 0; i < 8; i++) {
                     values.put("feature" + (i + 1), features[i][0]);
                 }
                 db.insert("features", null, values);
                 System.out.println(s.getTitle() + " features calculated.");
-            }
-            else {
+            } else {
                 System.out.println(s.getTitle() + " features null!");
             }
             s.setFeatures(features);
@@ -814,8 +806,8 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         }
 
         c.close();
-        Collections.sort(recommendedSongList, new Comparator<Song>(){
-            public int compare(Song a, Song b){
+        Collections.sort(recommendedSongList, new Comparator<Song>() {
+            public int compare(Song a, Song b) {
                 return Double.compare(a.getScore(), b.getScore());
             }
         });

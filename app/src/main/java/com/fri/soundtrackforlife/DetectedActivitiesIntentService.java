@@ -29,6 +29,7 @@ public class DetectedActivitiesIntentService extends IntentService {
 
     /**
      * Handles incoming intents.
+     *
      * @param intent The Intent is provided (inside a PendingIntent) when requestActivityUpdates()
      *               is called.
      */

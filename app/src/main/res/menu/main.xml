@@ -1,5 +1,5 @@
-<menu xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:android="http://schemas.android.com/apk/res/android" >
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
 
 
     <item
@@ -12,8 +12,8 @@
 
     <item
         android:id="@+id/action_end"
-        android:icon="@drawable/end"
         android:color="#030303"
+        android:icon="@drawable/end"
         android:orderInCategory="2"
         android:title="End"
         app:showAsAction="always" />

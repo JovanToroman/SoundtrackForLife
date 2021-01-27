@@ -69,7 +69,7 @@ public class FeatureExtractor {
     private AssetManager am;
     private MainActivity ma;
 
-    public FeatureExtractor (AssetManager am, MainActivity ma) {
+    public FeatureExtractor(AssetManager am, MainActivity ma) {
         this.am = am;
         this.ma = ma;
     }
@@ -77,6 +77,7 @@ public class FeatureExtractor {
     /**
      * This method is used to extract music features from songs. It gets the path of a song from its
      * relativePath attribute. It works for MP3 format ONLY.
+     *
      * @param s
      */
     public double[][] extractFeatures(Song s) {
@@ -123,7 +124,7 @@ public class FeatureExtractor {
     private double[][] reuseExistingFeedback(Song s) {
         double[][] ret = new double[8][1];
         Cursor c = ma.getFeedbackDBreader().retrieveExistingFeedback(s);
-        if(c.moveToNext()) {
+        if (c.moveToNext()) {
             for (int i = 0; i < 8; i++) {
                 ret[i][0] = c.getDouble(i + 5);
             }
@@ -133,7 +134,7 @@ public class FeatureExtractor {
         c.close();
         // try features table
         c = ma.getFeedbackDBreader().retrieveExistingFeatures(s);
-        if(c.moveToNext()) {
+        if (c.moveToNext()) {
             for (int i = 0; i < 8; i++) {
                 ret[i][0] = c.getDouble(i + 2);
             }
@@ -159,7 +160,7 @@ public class FeatureExtractor {
         InputStream fis = new FileInputStream(f);
         OutputStream o = new FileOutputStream(STORAGE_EMULATED_0_DOWNLOAD + "temp_out");
         int size = fis.available();
-        for(int i = size / 2; i < 61 * size / 120; i++) {  // i < 6 * size / 10
+        for (int i = size / 2; i < 61 * size / 120; i++) {  // i < 6 * size / 10
             o.write(fis.read());
         }
 
@@ -225,8 +226,8 @@ public class FeatureExtractor {
         l1.add(new MagnitudeSpectrum());
 
         List l2 = new LinkedList();
-        for (int i = 0; i<41; i++) {
-            if(i == 34)
+        for (int i = 0; i < 41; i++) {
+            if (i == 34)
                 l2.add(true);
             else l2.add(false);
         }
@@ -267,9 +268,9 @@ public class FeatureExtractor {
         String extension = "";
         int idx = fileName.lastIndexOf('.');
         if (idx > 0) {
-            extension = fileName.substring(idx+1);
+            extension = fileName.substring(idx + 1);
         }
-        for (int i=0; i < unsupportedExtensions.length; i++) {
+        for (int i = 0; i < unsupportedExtensions.length; i++) {
             if (extension.equals(unsupportedExtensions[i])) {
                 return false;
             }

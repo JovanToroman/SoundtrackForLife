@@ -18,19 +18,19 @@ public class Utils {
             Manifest.permission.WRITE_EXTERNAL_STORAGE
     };
 
-    public static Object fromString( String s ) throws IOException,
+    public static Object fromString(String s) throws IOException,
             ClassNotFoundException {
-        byte [] data = MyBase64.decode( s );
+        byte[] data = MyBase64.decode(s);
         ObjectInputStream ois = new ObjectInputStream(
-                new ByteArrayInputStream(  data ) );
-        Object o  = ois.readObject();
+                new ByteArrayInputStream(data));
+        Object o = ois.readObject();
         ois.close();
         return o;
     }
 
     /**
      * Checks if the app has permission to write to device storage
-     *
+     * <p>
      * If the app does not has permission then the user will be prompted to grant permissions
      *
      * @param activity
