@@ -33,7 +33,6 @@ public class DetectedActivitiesIntentService extends IntentService {
      * @param intent The Intent is provided (inside a PendingIntent) when requestActivityUpdates()
      *               is called.
      */
-    @SuppressWarnings("unchecked")
     @Override
     protected void onHandleIntent(Intent intent) {
         ActivityRecognitionResult result = ActivityRecognitionResult.extractResult(intent);

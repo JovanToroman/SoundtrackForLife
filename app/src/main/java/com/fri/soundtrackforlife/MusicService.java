@@ -225,12 +225,19 @@ public class MusicService extends Service implements
         playSong();
     }
 
+    /**
+     * Overload for playing song determined by the player after method has been called.
+     */
     public void playNext() {
         prevSongPosn = songPosn;
         songPosn = resolveNextSong();
         playSong();
     }
 
+    /**
+     * Overload for playing a song which was determined prior to calling this method.
+     * @param songToPlay index of the song that is to be played.
+     */
     public void playNext(Song songToPlay) {
         prevSongPosn = songPosn;
         songPosn = songs.indexOf(songToPlay);

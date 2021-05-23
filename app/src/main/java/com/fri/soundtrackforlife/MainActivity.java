@@ -44,7 +44,6 @@ import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
-import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
@@ -59,6 +58,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
+
+import static com.fri.soundtrackforlife.Utils.displayMessage;
 
 public class MainActivity extends AppCompatActivity implements MediaPlayerControl {
 
@@ -250,6 +251,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.INTERNET) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.INTERNET}, 3);
         }
+        Utils.verifyActivityPermissions(this);
     }
 
     @Override
@@ -387,27 +389,28 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     }
 
     @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         // preventing npe on implicit feedback when feedback is given before any song is played
         if (musicSrv.getMainActivity() == null) {
             musicSrv.setMainActivity(this);
         }
-        switch (item.getItemId()) {
-            case R.id.action_end:
-                stopService(playIntent);
-                musicSrv = null;
-                System.exit(0);
-                break;
-            case R.id.action_dislike:
-                Song currentSong = musicSrv.getCurrentSongData();
-                AsyncTask.execute(() -> addRecordWithFeatures(currentSong, DISLIKE));
-                displayMessage("You didn't like " + currentSong.getTitle());
-                playNext();
-                break;
-            case R.id.action_like:
-                AsyncTask.execute(() -> addRecordWithFeatures(musicSrv.getCurrentSongData(), LIKE));
-                displayMessage("You liked " + musicSrv.getCurrentSongData().getTitle());
-                break;
+        if (item.getItemId() == R.id.action_end) { // allow exiting even if music library is empty
+            stopService(playIntent);
+            musicSrv = null;
+            System.exit(0);
+        }
+        if (songLibraryEmpty()) { // don't allow for any other actions if library empty
+            return super.onOptionsItemSelected(item);
+        }
+        if (item.getItemId() == R.id.action_dislike) {
+            Song currentSong = musicSrv.getCurrentSongData();
+            AsyncTask.execute(() -> addRecordWithFeatures(currentSong, DISLIKE));
+            displayMessage("You didn't like " + currentSong.getTitle(), this);
+            playNext();
+        }
+        if (item.getItemId() == R.id.action_like) {
+            AsyncTask.execute(() -> addRecordWithFeatures(musicSrv.getCurrentSongData(), LIKE));
+            displayMessage("You liked " + musicSrv.getCurrentSongData().getTitle(), this);
         }
         return super.onOptionsItemSelected(item);
     }
@@ -442,9 +445,9 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         return newRowId;
     }
 
-    public void displayMessage(String mess) {
-        Snackbar.make(findViewById(R.id.coordinatorLayout), mess, Snackbar.LENGTH_LONG).show();
-    }
+//    public void displayMessage(String mess) {
+//        Snackbar.make(findViewById(R.id.coordinatorLayout), mess, Snackbar.LENGTH_LONG).show();
+//    }
 
     @Override
     protected void onDestroy() {
@@ -815,18 +818,38 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
         return recommendedSongList;
     }
 
+    /**
+     * This is the main method which is invoked when "PLAY!" button is clicked.
+     * @param view injected view
+     */
     public void recommendSong(View view) {
+        if (songLibraryEmpty()) {
+            return;
+        }
         if (musicSrv.getMainActivity() == null) {
-            musicSrv.setMainActivity(this);
+            musicSrv.setMainActivity(this); // set a reference to this activity on music player
         }
         if (displayedNextSong != null) {
-            musicSrv.playNext(displayedNextSong);
+            musicSrv.playNext(displayedNextSong); // play predetermined song
         } else {
-            musicSrv.playNext();
+            musicSrv.playNext(); // play song which is to be determined
         }
         controller.show(0);
         incrementCounts();
         initPlayerValues();
+    }
+
+    /**
+     * Handles cases when there are no songs in user's music library to avoid
+     * {@link IndexOutOfBoundsException}.
+     * @return true if list is not empty and false if it is empty.
+     */
+    private boolean songLibraryEmpty() {
+        if (songList.isEmpty()) {
+            displayMessage("Please add some songs to your music library", this);
+            return true;
+        }
+        return false;
     }
 
     public void setLastFeedbackSong(Song song) {
@@ -834,10 +857,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayerContro
     }
 
     public boolean checkLastFeedbackSong(Song song) {
-        if (lastFeedbackSong == null || lastFeedbackSong != song) {
-            return true;
-        }
-        return false;
+        return lastFeedbackSong == null || lastFeedbackSong != song;
     }
 
     private String getUserId() {

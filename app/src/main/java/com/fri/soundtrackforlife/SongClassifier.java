@@ -31,9 +31,9 @@ import static com.fri.soundtrackforlife.MainActivity.DISLIKE;
 class SongClassifier {
 
     static Map<String, Double> activities;
-    JSONObject dbUnique;
-    JSONObject personalizedData;
-    Context context;
+    private JSONObject dbUnique;
+    private JSONObject personalizedData;
+    private Context context;
     private Classifier<Double, Boolean> bayes;
 
 
