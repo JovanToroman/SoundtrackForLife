@@ -17,8 +17,8 @@ labels = []
 activities = []
 joined_dict = {**res['feedback'], **res['playlist']}
 
-values = joined_dict.values()
-random.shuffle(list(joined_dict.values()))
+values = list(joined_dict.values())
+random.shuffle(values)
 
 for i in values:
     if 'features' in i and 'activity' in i and 'feedback' in i:
